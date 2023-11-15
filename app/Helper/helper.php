@@ -2,9 +2,7 @@
 
 
 use App\Mail\InvitationMail;
-use App\Models\Company;
-use App\Models\Event;
-use App\Models\User;
+
 
 function validationResponce($errors)
 {
@@ -59,6 +57,16 @@ function sendError($error, $dataError = [], $code = 422)
         "data" => $dataError
     ];
     return response()->json($response, $code);
+}
+
+
+function uploadImage($picture,  $imagePath)
+{
+    $imageName = rand(1, 50) . "_" . $picture->getClientOriginalName();
+    $imageName  =   preg_replace('/\s+/', '_', $imageName);
+    $imagePath1 = $picture->move(public_path($imagePath), $imageName);
+    $image =  $imagePath . $imageName;
+    return $image;
 }
 
 function sendEmailToUser($email, $type)

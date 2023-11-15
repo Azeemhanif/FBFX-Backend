@@ -8,4 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class AffiliateLink extends Model
 {
     use HasFactory;
+    protected $fillable = [
+        'IB_broker',
+        'PAMM',
+        'trade',
+        'GPS',
+        'id', // Add id to the fillable array
+    ];
 }
