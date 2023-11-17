@@ -17,7 +17,6 @@ class AcademyController extends Controller
      */
     public function index()
     {
-        //
     }
 
     /**
@@ -61,9 +60,30 @@ class AcademyController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Academy $academy)
+    public function show(Request $request)
     {
-        //
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+            $search = $request->query('search', null);
+            $academy = Academy::query();
+            if ($search) {
+                $academy->where('title', 'LIKE', '%' . $search . '%');
+            }
+            $count = $academy->count();
+            $data = $academy->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+
+            $collection =  AcademyResource::collection($data);
+            $response = [
+                'totalCount' => $count,
+                'academies' => $collection,
+            ];
+
+            return sendResponse(200, 'Data feteched successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
     }
 
     /**

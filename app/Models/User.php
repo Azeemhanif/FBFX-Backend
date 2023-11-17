@@ -47,4 +47,10 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+
+    public function favouriteSignals()
+    {
+        return $this->hasMany(FavouriteSignal::class, 'user_id', 'id');
+    }
 }

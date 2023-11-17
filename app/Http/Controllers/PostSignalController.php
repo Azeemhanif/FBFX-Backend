@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\PostSignalResource;
+use App\Models\FavouriteSignal;
 use App\Models\PostSignal;
 use Illuminate\Http\Request;
 use App\Validations\FBFXValidations;
@@ -50,6 +51,36 @@ class PostSignalController extends Controller
 
 
 
+
+    public function getFavourite(Request $request)
+    {
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+            $search = $request->query('search', null);
+            $user = Auth::user();
+            $favSignalIds = $user->favouriteSignals()->pluck('post_signal_id');
+            $postSignal = PostSignal::whereIn('id', $favSignalIds)->where('closed', '=', 'no');
+
+            if ($search) {
+                $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
+            }
+
+            $postSignal = $this->filter($request, $postSignal);
+            $count = $postSignal->count();
+            $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+
+            $collection = PostSignalResource::collection($data);
+            $response = [
+                'totalCount' => $count,
+                'post_signals' => $collection,
+            ];
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
     public function history(Request $request)
     {
         try {
@@ -203,9 +234,30 @@ class PostSignalController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PostSignal $postSignal)
+    public function addFavourite($id)
     {
-        //
+        try {
+            $postSignal = PostSignal::find($id);
+            if (!$postSignal)
+                return sendResponse(202, 'Data does not exists!', (object)[]);
+
+            $favSignal = FavouriteSignal::where(['user_id' => Auth::user()->id, 'post_signal_id' => $id])->first();
+            if (!$favSignal) {
+                $addFavSignal = new FavouriteSignal();
+                $addFavSignal->user_id = Auth::user()->id;
+                $addFavSignal->post_signal_id = $id;
+                $addFavSignal->save();
+                $message = 'Add post signal in favourite!';
+            } else {
+                $favSignal->delete();
+                $message = 'Remove post signal from favourite!';
+            }
+            $collection = new PostSignalResource($postSignal);
+            return sendResponse(200, $message, $collection);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
     }
 
     /**

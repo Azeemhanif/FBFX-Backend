@@ -41,6 +41,8 @@ Route::middleware('auth:sanctum')->prefix('user/')->group(
                 Route::get("recent", "index");
                 Route::get("history", "history");
                 Route::get("detail/{id}", "edit");
+                Route::get("favourite/{id}", "addFavourite");
+                Route::get("favourite", "getFavourite");
             }
         );
     }
@@ -71,6 +73,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
         Route::controller(AcademyController::class)->prefix('academy/')->group(
             function () {
                 Route::post("add", "store");
+                Route::get("listing", "show");
                 Route::get("/{id}", "edit");
                 Route::delete('/{id}', 'destroy');
             }
