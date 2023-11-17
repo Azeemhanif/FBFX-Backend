@@ -8,4 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class Academy extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'description',
+        'url',
+        'youtube',
+        'image',
+        'id',
+    ];
 }

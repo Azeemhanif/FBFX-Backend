@@ -39,6 +39,30 @@ class FBFXValidations
 
 
 
+
+    public static function validateUpdateUser($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required',
+                'first_name' => 'required',
+                'last_name' => 'required',
+                'email' => 'required|unique:users,email,' . $request->id,
+                'mobile' => 'required',
+                'gender' => 'required',
+                'age' => 'required',
+                'experience' => 'required',
+                'trader_type' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            //   return $validator->first();
+            return $validator;
+        }
+    }
+
     public static function validateLogin($request)
     {
         $validator = Validator::make(
@@ -201,6 +225,29 @@ class FBFXValidations
     }
 
 
+
+
+    public static function validateAffiliateLink($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'GPS' => 'required',
+                'trade' => 'required',
+                'PAMM' => 'required',
+                'IB_broker' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+
+
+
+
     public static function detailAdminValidate($request)
     {
         $validator = Validator::make(
@@ -212,6 +259,24 @@ class FBFXValidations
 
         if ($validator->fails()) {
             //   return $validator->first();
+            return $validator;
+        }
+    }
+
+
+    public static function validateAcademy($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'title' => 'required',
+                'description' => 'required',
+                'url' => 'required',
+                'youtube' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
             return $validator;
         }
     }

@@ -439,6 +439,43 @@ class UserController extends Controller
         }
     }
 
+    public function updateProfile(Request $request)
+    {
+        try {
+
+            $validatorResult = $this->checkValidations(FBFXValidations::validateUpdateUser($request));
+            if ($validatorResult) return $validatorResult;
+            $input = $request->all();
+            $id   =  Auth::user()->id;
+
+            $user = User::where('id', $id)->first();
+            if (!$user)
+                return sendResponse(202, 'User does not exists!',  (object)[]);
+
+            if (isset($input['email']))   $user->email = $input['email'];
+            $user->first_name = $input['first_name'];
+            $user->last_name = $input['last_name'];
+            $user->mobile = $input['mobile'];
+            $user->experience = $input['experience'];
+            $user->age = $input['age'];
+            $user->gender = $input['gender'];
+            $user->trader_type = $input['trader_type'];
+
+            if ($request->hasFile('image')) {
+                $folderPath = 'uploads/images/';
+                $file = $request->file('image');
+                $uploadImage = uploadImage($file, $folderPath);
+                $user['image'] = $uploadImage;
+            }
+            $user->save();
+            $collection = new UserResource($user);
+            return  sendResponse(200, 'Data fetched successfully', $collection);
+        } catch (\Exception $ex) {
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
 
     public function destroy($id)
     {

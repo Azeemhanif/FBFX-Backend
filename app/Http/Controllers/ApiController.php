@@ -185,87 +185,87 @@ class ApiController extends Controller
 
     // start  update users fetch function
 
-    public function update_user(Request $Request)
-    {
-        $response = array();
-        $user_id = admin::find($Request['id']);
-        if (!empty($user_id)) {
-            if ($user_id->email == $Request['email'] && $user_id->role == '0') {
-                $user = admin::find($Request['id']);
-                $user->role = '0';
-                $user->f_name = $Request['f_name'];
-                $user->l_name = $Request['l_name'];
-                $user->email = $Request['email'];
-                $user->password = $Request['password'];
-                $user->mobile = $Request['mobile'];
-                $user->experience = $Request['experience'];
-                $user->age = $Request['age'];
-                $user->gender = $Request['gender'];
-                $user->type = $Request['type'];
-                if (!empty($Request['image'])) {
-                    $file = $Request->file('image');
-                    $extension = $file->getClientOriginalExtension();
-                    $filename = time() . "." . $extension;
-                    $file->move('uploads/images/', $filename);
-                    $user->image = $filename;
-                } else {
-                    $user->image = " ";
-                }
-                $Result = $user->save();
-                if ($Result) {
-                    $response['success'] = 1;
-                    $response["message"] = "Record update successfully";
-                    return json_encode($response);
-                } else {
-                    $response['success'] = 0;
-                    $response["message"] = "Record update Faild";
-                    return json_encode($response);
-                }
-            } else {
-                $user_name = admin::where('email', $Request->email)->where('role', '0')->get()->toarray();
-                if (empty($user_name)) {
-                    $user = admin::find($Request['id']);
-                    $user->role = '0';
-                    $user->f_name = $Request['f_name'];
-                    $user->l_name = $Request['l_name'];
-                    $user->email = $Request['email'];
-                    $user->password = $Request['password'];
-                    $user->mobile = $Request['mobile'];
-                    $user->experience = $Request['experience'];
-                    $user->age = $Request['age'];
-                    $user->gender = $Request['gender'];
-                    $user->type = $Request['type'];
-                    if (!empty($Request['image'])) {
-                        $file = $Request->file('image');
-                        $extension = $file->getClientOriginalExtension();
-                        $filename = time() . "." . $extension;
-                        $file->move('uploads/images/', $filename);
-                        $user->image = $filename;
-                    } else {
-                        $user->image = " ";
-                    }
-                    $Result = $user->save();
-                    if ($Result) {
-                        $response['success'] = 1;
-                        $response["message"] = "Record update successfully";
-                        return json_encode($response);
-                    } else {
-                        $response['success'] = 0;
-                        $response["message"] = "Record update Faild";
-                        return json_encode($response);
-                    }
-                } else {
-                    $response['success'] = 0;
-                    $response["message"] = "user is already Exist";
-                    return json_encode($response);
-                }
-            }
-        } else {
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    // public function update_user(Request $Request)
+    // {
+    //     $response = array();
+    //     $user_id = admin::find($Request['id']);
+    //     if (!empty($user_id)) {
+    //         if ($user_id->email == $Request['email'] && $user_id->role == '0') {
+    //             $user = admin::find($Request['id']);
+    //             $user->role = '0';
+    //             $user->f_name = $Request['f_name'];
+    //             $user->l_name = $Request['l_name'];
+    //             $user->email = $Request['email'];
+    //             $user->password = $Request['password'];
+    //             $user->mobile = $Request['mobile'];
+    //             $user->experience = $Request['experience'];
+    //             $user->age = $Request['age'];
+    //             $user->gender = $Request['gender'];
+    //             $user->type = $Request['type'];
+    //             if (!empty($Request['image'])) {
+    //                 $file = $Request->file('image');
+    //                 $extension = $file->getClientOriginalExtension();
+    //                 $filename = time() . "." . $extension;
+    //                 $file->move('uploads/images/', $filename);
+    //                 $user->image = $filename;
+    //             } else {
+    //                 $user->image = " ";
+    //             }
+    //             $Result = $user->save();
+    //             if ($Result) {
+    //                 $response['success'] = 1;
+    //                 $response["message"] = "Record update successfully";
+    //                 return json_encode($response);
+    //             } else {
+    //                 $response['success'] = 0;
+    //                 $response["message"] = "Record update Faild";
+    //                 return json_encode($response);
+    //             }
+    //         } else {
+    //             $user_name = admin::where('email', $Request->email)->where('role', '0')->get()->toarray();
+    //             if (empty($user_name)) {
+    //                 $user = admin::find($Request['id']);
+    //                 $user->role = '0';
+    //                 $user->f_name = $Request['f_name'];
+    //                 $user->l_name = $Request['l_name'];
+    //                 $user->email = $Request['email'];
+    //                 $user->password = $Request['password'];
+    //                 $user->mobile = $Request['mobile'];
+    //                 $user->experience = $Request['experience'];
+    //                 $user->age = $Request['age'];
+    //                 $user->gender = $Request['gender'];
+    //                 $user->type = $Request['type'];
+    //                 if (!empty($Request['image'])) {
+    //                     $file = $Request->file('image');
+    //                     $extension = $file->getClientOriginalExtension();
+    //                     $filename = time() . "." . $extension;
+    //                     $file->move('uploads/images/', $filename);
+    //                     $user->image = $filename;
+    //                 } else {
+    //                     $user->image = " ";
+    //                 }
+    //                 $Result = $user->save();
+    //                 if ($Result) {
+    //                     $response['success'] = 1;
+    //                     $response["message"] = "Record update successfully";
+    //                     return json_encode($response);
+    //                 } else {
+    //                     $response['success'] = 0;
+    //                     $response["message"] = "Record update Faild";
+    //                     return json_encode($response);
+    //                 }
+    //             } else {
+    //                 $response['success'] = 0;
+    //                 $response["message"] = "user is already Exist";
+    //                 return json_encode($response);
+    //             }
+    //         }
+    //     } else {
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
     // end  update users fetch function
 
     // start edit user delete function    
@@ -369,128 +369,128 @@ class ApiController extends Controller
 
     // start  edit admin fetch function
 
-    public function edit_admin($id)
-    {
-        $response = array();
-        $admin_name = admin::select('*')
-            ->where('id', '=', $id)
-            ->where('role', '=', '1')
-            ->get();
-        $count = count($admin_name);
-        if ($count != 0) {
-            $response["admin_name"] = array();
-            foreach ($admin_name as $row) {
-                $admins["id"] = $row['id'];
-                $admins["email"] = $row['email'];
-                $admins["created_at"] = $row['created_at'];
-                $admins["updated_at"] = $row['updated_at'];
-                array_push($response["admin_name"], $admins);
-            }
-            $response['success'] = 1;
-            $response["message"] = "Successfully fetch admins";
-            return json_encode($response);
-        } else {
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    // public function edit_admin($id)
+    // {
+    //     $response = array();
+    //     $admin_name = admin::select('*')
+    //         ->where('id', '=', $id)
+    //         ->where('role', '=', '1')
+    //         ->get();
+    //     $count = count($admin_name);
+    //     if ($count != 0) {
+    //         $response["admin_name"] = array();
+    //         foreach ($admin_name as $row) {
+    //             $admins["id"] = $row['id'];
+    //             $admins["email"] = $row['email'];
+    //             $admins["created_at"] = $row['created_at'];
+    //             $admins["updated_at"] = $row['updated_at'];
+    //             array_push($response["admin_name"], $admins);
+    //         }
+    //         $response['success'] = 1;
+    //         $response["message"] = "Successfully fetch admins";
+    //         return json_encode($response);
+    //     } else {
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
     // start  edit admins fetch function
 
     // start  update admins fetch function
 
-    public function update_admin(Request $Request)
-    {
-        $response = array();
-        $admin_id = admin::find($Request['id']);
-        if (!empty($admin_id)) {
-            if ($admin_id->email == $Request['email'] && $admin_id->role == '1') {
-                $admin = admin::find($Request['id']);
-                $admin->role = '1';
-                $admin->f_name = $admin->f_name;
-                $admin->l_name = $admin->l_name;
-                $admin->email = $Request['email'];
-                $admin->experience = $Request['experience'];
-                $admin->age = $Request['age'];
-                $admin->gender = $Request['gender'];
-                $admin->password = $admin->password;
-                $admin->mobile = $admin->mobile;
-                $admin->image = $admin->image;
-                $Result = $admin->save();
-                if ($Result) {
-                    $response['success'] = 1;
-                    $response["message"] = "Record update successfully";
-                    return json_encode($response);
-                } else {
-                    $response['success'] = 0;
-                    $response["message"] = "Record update Faild";
-                    return json_encode($response);
-                }
-            } else {
-                $admin_name = admin::where('email', $Request->email)->where('role', '1')->get()->toarray();
-                if (empty($admin_name)) {
-                    $admin = admin::find($Request['id']);
-                    $admin->role = '1';
-                    $admin->f_name = $admin->f_name;
-                    $admin->l_name = $admin->l_name;
-                    $admin->email = $Request['email'];
-                    $admin->experience = $Request['experience'];
-                    $admin->age = $Request['age'];
-                    $admin->gender = $Request['gender'];
-                    $admin->password = $admin->password;
-                    $admin->mobile = $admin->mobile;
-                    $admin->image = $admin->image;
-                    $Result = $admin->save();
-                    if ($Result) {
-                        $response['success'] = 1;
-                        $response["message"] = "Record update successfully";
-                        return json_encode($response);
-                    } else {
-                        $response['success'] = 0;
-                        $response["message"] = "Record update Faild";
-                        return json_encode($response);
-                    }
-                } else {
-                    $response['success'] = 0;
-                    $response["message"] = "admin is already Exist";
-                    return json_encode($response);
-                }
-            }
-        } else {
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    // public function update_admin(Request $Request)
+    // {
+    //     $response = array();
+    //     $admin_id = admin::find($Request['id']);
+    //     if (!empty($admin_id)) {
+    //         if ($admin_id->email == $Request['email'] && $admin_id->role == '1') {
+    //             $admin = admin::find($Request['id']);
+    //             $admin->role = '1';
+    //             $admin->f_name = $admin->f_name;
+    //             $admin->l_name = $admin->l_name;
+    //             $admin->email = $Request['email'];
+    //             $admin->experience = $Request['experience'];
+    //             $admin->age = $Request['age'];
+    //             $admin->gender = $Request['gender'];
+    //             $admin->password = $admin->password;
+    //             $admin->mobile = $admin->mobile;
+    //             $admin->image = $admin->image;
+    //             $Result = $admin->save();
+    //             if ($Result) {
+    //                 $response['success'] = 1;
+    //                 $response["message"] = "Record update successfully";
+    //                 return json_encode($response);
+    //             } else {
+    //                 $response['success'] = 0;
+    //                 $response["message"] = "Record update Faild";
+    //                 return json_encode($response);
+    //             }
+    //         } else {
+    //             $admin_name = admin::where('email', $Request->email)->where('role', '1')->get()->toarray();
+    //             if (empty($admin_name)) {
+    //                 $admin = admin::find($Request['id']);
+    //                 $admin->role = '1';
+    //                 $admin->f_name = $admin->f_name;
+    //                 $admin->l_name = $admin->l_name;
+    //                 $admin->email = $Request['email'];
+    //                 $admin->experience = $Request['experience'];
+    //                 $admin->age = $Request['age'];
+    //                 $admin->gender = $Request['gender'];
+    //                 $admin->password = $admin->password;
+    //                 $admin->mobile = $admin->mobile;
+    //                 $admin->image = $admin->image;
+    //                 $Result = $admin->save();
+    //                 if ($Result) {
+    //                     $response['success'] = 1;
+    //                     $response["message"] = "Record update successfully";
+    //                     return json_encode($response);
+    //                 } else {
+    //                     $response['success'] = 0;
+    //                     $response["message"] = "Record update Faild";
+    //                     return json_encode($response);
+    //                 }
+    //             } else {
+    //                 $response['success'] = 0;
+    //                 $response["message"] = "admin is already Exist";
+    //                 return json_encode($response);
+    //             }
+    //         }
+    //     } else {
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
     // end  update admins fetch function
 
     // start edit admin delete function    
 
-    public function admin_delete($id)
-    {
-        $response = array();
-        $admin = admin::find($id);
-        if (empty($admin)) {
-            $response['success'] = 0;
-            $response["message"] = "Data is not exist";
-            return json_encode($response);
-        } else {
-            $post_signal = post_signal::select('*')
-                ->where('user_id', '=', $id)
-                ->delete();
-            $Result = $admin->delete();
-            if ($Result) {
-                $response['success'] = 1;
-                $response["message"] = "Data successfully deleted";
-                return json_encode($response);
-            } else {
+    // public function admin_delete($id)
+    // {
+    //     $response = array();
+    //     $admin = admin::find($id);
+    //     if (empty($admin)) {
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data is not exist";
+    //         return json_encode($response);
+    //     } else {
+    //         $post_signal = post_signal::select('*')
+    //             ->where('user_id', '=', $id)
+    //             ->delete();
+    //         $Result = $admin->delete();
+    //         if ($Result) {
+    //             $response['success'] = 1;
+    //             $response["message"] = "Data successfully deleted";
+    //             return json_encode($response);
+    //         } else {
 
-                $response['success'] = 0;
-                $response["message"] = "Data cannot be deleted";
-                return json_encode($response);
-            }
-        }
-    }
+    //             $response['success'] = 0;
+    //             $response["message"] = "Data cannot be deleted";
+    //             return json_encode($response);
+    //         }
+    //     }
+    // }
     // end edit admin delete function
 
     // start  post singal fetch function
@@ -534,40 +534,40 @@ class ApiController extends Controller
 
     // start  history_signal fetch function
 
-    public function history_signal()
-    {
-        $response = array();
-        $post_name = post_signal::where('closed', '=', 'yes')->orderBy('id', 'DESC')->get();
-        $count = count($post_name);
-        if ($count != 0) {
-            $response["post_name"] = array();
-            foreach ($post_name as $row) {
-                $post_signal["id"] = $row['id'];
-                $post_signal["currency_pair"] = $row['currency_pair'];
-                $post_signal["action"] = $row['action'];
-                $post_signal["stop_loss"] = $row['stop_loss'];
-                $post_signal["profit_one"] = $row['profit_one'];
-                $post_signal["profit_two"] = $row['profit_two'];
-                $post_signal["profit_three"] = $row['profit_three'];
-                $post_signal["RRR"] = $row['RRR'];
-                $post_signal["type"] = $row['type'];
-                $post_signal["pips"] = $row['pips'];
-                $post_signal["close_price"] = $row['close_price'];
-                $post_signal["open_price"] = $row['open_price'];
-                $post_signal["timeframe"] = $row['timeframe'];
-                $post_signal["created_at"] = $row['created_at'];
-                $post_signal["updated_at"] = $row['updated_at'];
-                array_push($response["post_name"], $post_signal);
-            }
-            $response['success'] = 1;
-            $response["message"] = "Successfully fetch user post signal";
-            return json_encode($response);
-        } else {
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    // public function history_signal()
+    // {
+    //     $response = array();
+    //     $post_name = post_signal::where('closed', '=', 'yes')->orderBy('id', 'DESC')->get();
+    //     $count = count($post_name);
+    //     if ($count != 0) {
+    //         $response["post_name"] = array();
+    //         foreach ($post_name as $row) {
+    //             $post_signal["id"] = $row['id'];
+    //             $post_signal["currency_pair"] = $row['currency_pair'];
+    //             $post_signal["action"] = $row['action'];
+    //             $post_signal["stop_loss"] = $row['stop_loss'];
+    //             $post_signal["profit_one"] = $row['profit_one'];
+    //             $post_signal["profit_two"] = $row['profit_two'];
+    //             $post_signal["profit_three"] = $row['profit_three'];
+    //             $post_signal["RRR"] = $row['RRR'];
+    //             $post_signal["type"] = $row['type'];
+    //             $post_signal["pips"] = $row['pips'];
+    //             $post_signal["close_price"] = $row['close_price'];
+    //             $post_signal["open_price"] = $row['open_price'];
+    //             $post_signal["timeframe"] = $row['timeframe'];
+    //             $post_signal["created_at"] = $row['created_at'];
+    //             $post_signal["updated_at"] = $row['updated_at'];
+    //             array_push($response["post_name"], $post_signal);
+    //         }
+    //         $response['success'] = 1;
+    //         $response["message"] = "Successfully fetch user post signal";
+    //         return json_encode($response);
+    //     } else {
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
 
     // start   fetch function        
 
@@ -705,38 +705,38 @@ class ApiController extends Controller
 
     // start add post singal update function            
 
-    public function update_post_signal(Request $Request)
-    {
-        $response = array();
-        // $post_signal = post_signal::find($id);
-        $post_signal = post_signal::find($Request['id']);
-        if ($post_signal) {
-            $post_signal->currency_pair = $Request['currency_pair'];
-            $post_signal->action = $Request['action'];
-            $post_signal->stop_loss = $Request['stop_loss'];
-            $post_signal->profit_one = $Request['profit_one'];
-            $post_signal->profit_two = $Request['profit_two'];
-            $post_signal->profit_three = $Request['profit_three'];
-            $post_signal->RRR = $Request['RRR'];
-            $post_signal->timeframe = $Request['timeframe'];
-            $post_signal->type = $Request['type'];
-            $Result = $post_signal->save();
-            if ($Result) {
-                $response['success'] = 1;
-                $response["message"] = "Post signal Update successfull";
-                return json_encode($response);
-            } else {
-                $response['success'] = 0;
-                $response["message"] = "Post signal updated Faild";
-                return json_encode($response);
-            }
-        } else {
+    // public function update_post_signal(Request $Request)
+    // {
+    //     $response = array();
+    //     // $post_signal = post_signal::find($id);
+    //     $post_signal = post_signal::find($Request['id']);
+    //     if ($post_signal) {
+    //         $post_signal->currency_pair = $Request['currency_pair'];
+    //         $post_signal->action = $Request['action'];
+    //         $post_signal->stop_loss = $Request['stop_loss'];
+    //         $post_signal->profit_one = $Request['profit_one'];
+    //         $post_signal->profit_two = $Request['profit_two'];
+    //         $post_signal->profit_three = $Request['profit_three'];
+    //         $post_signal->RRR = $Request['RRR'];
+    //         $post_signal->timeframe = $Request['timeframe'];
+    //         $post_signal->type = $Request['type'];
+    //         $Result = $post_signal->save();
+    //         if ($Result) {
+    //             $response['success'] = 1;
+    //             $response["message"] = "Post signal Update successfull";
+    //             return json_encode($response);
+    //         } else {
+    //             $response['success'] = 0;
+    //             $response["message"] = "Post signal updated Faild";
+    //             return json_encode($response);
+    //         }
+    //     } else {
 
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
     // end add post singal update function   
 
     // start add update_pips function            
@@ -1183,84 +1183,84 @@ class ApiController extends Controller
 
     // start add affiliate_link function            
 
-    public function add_affiliate_link(Request $Request)
-    {
-        $response = array();
-        $affiliate_link = new affiliate_link;
-        $affiliate_link->VPS = $Request['VPS'];
-        $affiliate_link->trade = $Request['trade'];
-        $affiliate_link->PAMM = $Request['PAMM'];
-        $affiliate_link->IB_broker = $Request['IB_broker'];
-        $Result = $affiliate_link->save();
-        if ($Result) {
-            $response['success'] = 1;
-            $response["message"] = "Affiliate Link insert successfully";
-            return json_encode($response);
-        } else {
-            $response['success'] = 0;
-            $response["message"] = "Affiliate Link insertion Faild";
-            return json_encode($response);
-        }
-    }
+    // public function add_affiliate_link(Request $Request)
+    // {
+    //     $response = array();
+    //     $affiliate_link = new affiliate_link;
+    //     $affiliate_link->VPS = $Request['VPS'];
+    //     $affiliate_link->trade = $Request['trade'];
+    //     $affiliate_link->PAMM = $Request['PAMM'];
+    //     $affiliate_link->IB_broker = $Request['IB_broker'];
+    //     $Result = $affiliate_link->save();
+    //     if ($Result) {
+    //         $response['success'] = 1;
+    //         $response["message"] = "Affiliate Link insert successfully";
+    //         return json_encode($response);
+    //     } else {
+    //         $response['success'] = 0;
+    //         $response["message"] = "Affiliate Link insertion Faild";
+    //         return json_encode($response);
+    //     }
+    // }
     // end add affiliate_link function
 
     // start edit affiliate_link function
 
-    public function edit_affiliate_link($id)
-    {
-        $response = array();
-        $affiliate_link_name = affiliate_link::find($id);
-        if ($affiliate_link_name) {
-            $affiliate_link["id"] = $affiliate_link_name['id'];
-            $affiliate_link["VPS"] = $affiliate_link_name['VPS'];
-            $affiliate_link["trade"] = $affiliate_link_name['trade'];
-            $affiliate_link["PAMM"] = $affiliate_link_name['PAMM'];
-            $affiliate_link["IB_broker"] = $affiliate_link_name['IB_broker'];
-            $affiliate_link["created_at"] = $affiliate_link_name['created_at'];
-            $affiliate_link["updated_at"] = $affiliate_link_name['updated_at'];
-            $response["affiliate_link"] = array();
-            array_push($response["affiliate_link"], $affiliate_link);
-            $response['success'] = 1;
-            $response["message"] = "Singal Affiliate link fetch";
-            return json_encode($response);
-        } else {
+    // public function edit_affiliate_link($id)
+    // {
+    //     $response = array();
+    //     $affiliate_link_name = affiliate_link::find($id);
+    //     if ($affiliate_link_name) {
+    //         $affiliate_link["id"] = $affiliate_link_name['id'];
+    //         $affiliate_link["VPS"] = $affiliate_link_name['VPS'];
+    //         $affiliate_link["trade"] = $affiliate_link_name['trade'];
+    //         $affiliate_link["PAMM"] = $affiliate_link_name['PAMM'];
+    //         $affiliate_link["IB_broker"] = $affiliate_link_name['IB_broker'];
+    //         $affiliate_link["created_at"] = $affiliate_link_name['created_at'];
+    //         $affiliate_link["updated_at"] = $affiliate_link_name['updated_at'];
+    //         $response["affiliate_link"] = array();
+    //         array_push($response["affiliate_link"], $affiliate_link);
+    //         $response['success'] = 1;
+    //         $response["message"] = "Singal Affiliate link fetch";
+    //         return json_encode($response);
+    //     } else {
 
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
     // end edit affiliate_link function  
 
     // start add affiliate_link update function            
 
-    public function update_affiliate_link(Request $Request)
-    {
-        $response = array();
-        // $affiliate_link = affiliate_link::find($id);
-        $affiliate_link = affiliate_link::find($Request['id']);
-        if ($affiliate_link) {
-            $affiliate_link->VPS = $Request['VPS'];
-            $affiliate_link->trade = $Request['trade'];
-            $affiliate_link->PAMM = $Request['PAMM'];
-            $affiliate_link->IB_broker = $Request['IB_broker'];
-            $Result = $affiliate_link->save();
-            if ($Result) {
-                $response['success'] = 1;
-                $response["message"] = "Affiliate link Update successfully";
-                return json_encode($response);
-            } else {
-                $response['success'] = 0;
-                $response["message"] = "Affiliate link updated Faild";
-                return json_encode($response);
-            }
-        } else {
+    // public function update_affiliate_link(Request $Request)
+    // {
+    //     $response = array();
+    //     // $affiliate_link = affiliate_link::find($id);
+    //     $affiliate_link = affiliate_link::find($Request['id']);
+    //     if ($affiliate_link) {
+    //         $affiliate_link->VPS = $Request['VPS'];
+    //         $affiliate_link->trade = $Request['trade'];
+    //         $affiliate_link->PAMM = $Request['PAMM'];
+    //         $affiliate_link->IB_broker = $Request['IB_broker'];
+    //         $Result = $affiliate_link->save();
+    //         if ($Result) {
+    //             $response['success'] = 1;
+    //             $response["message"] = "Affiliate link Update successfully";
+    //             return json_encode($response);
+    //         } else {
+    //             $response['success'] = 0;
+    //             $response["message"] = "Affiliate link updated Faild";
+    //             return json_encode($response);
+    //         }
+    //     } else {
 
-            $response['success'] = 0;
-            $response["message"] = "Data cannot be exist";
-            return json_encode($response);
-        }
-    }
+    //         $response['success'] = 0;
+    //         $response["message"] = "Data cannot be exist";
+    //         return json_encode($response);
+    //     }
+    // }
     // end add affiliate_link update function          
 
     // start edit affiliate_link delete function    

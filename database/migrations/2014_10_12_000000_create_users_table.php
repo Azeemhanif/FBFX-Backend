@@ -28,6 +28,7 @@ return new class extends Migration
             $table->integer('otp')->nullable();
             $table->boolean('is_otp_verified')->default(0);
             $table->string('otp_expiry_time')->nullable();
+            $table->string('trader_type')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AcademyController;
+use App\Http\Controllers\AffiliateLinkController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
@@ -27,7 +29,7 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('socialSignup', 'socialSignup');
     // Route::post('/socialLogin', 'socialLogin');
     Route::post('forget-password', 'forget');
-
+    Route::post('update/profile', 'updateProfile')->middleware("auth:sanctum")->name('user.updateProfile');
     Route::post('verify/otp', 'verifyOtp')->middleware("auth:sanctum")->name('user.verifyOtp');
     Route::get('regenerate/otp', 'regenerateOtp')->middleware("auth:sanctum")->name('user.regenerateOtp');
 });
@@ -39,6 +41,8 @@ Route::middleware('auth:sanctum')->prefix('user/')->group(
                 Route::get("recent", "index");
                 Route::get("history", "history");
                 Route::get("detail/{id}", "edit");
+                Route::get("favourite/{id}", "addFavourite");
+                Route::get("favourite", "getFavourite");
             }
         );
     }
@@ -54,15 +58,28 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
                 Route::delete('/{id}', 'destroy');
             }
         );
-
         Route::controller(PostSignalController::class)->prefix('signals/')->group(
             function () {
                 Route::post("create", "store");
             }
         );
+        Route::controller(AffiliateLinkController::class)->prefix('affiliate/links/')->group(
+            function () {
+                Route::post("add", "store");
+                Route::get("/{id}", "edit");
+            }
+        );
+
+        Route::controller(AcademyController::class)->prefix('academy/')->group(
+            function () {
+                Route::post("add", "store");
+                Route::get("listing", "show");
+                Route::get("/{id}", "edit");
+                Route::delete('/{id}', 'destroy');
+            }
+        );
     }
 );
-
 
 //old routes
 Route::post("user_login", [ApiController::class, "user_login"]);
@@ -72,7 +89,7 @@ Route::post("add_users", [ApiController::class, "add_users"]);
 Route::post("forget_password", [ApiController::class, "forget_password"]);
 
 Route::get("edit_user/{id}", [ApiController::class, "edit_user"]);
-Route::post("update_user", [ApiController::class, "update_user"]);
+// Route::post("update_user", [ApiController::class, "update_user"]);
 Route::get("user_delete/{id}", [ApiController::class, "user_delete"]);
 
 
@@ -112,19 +129,19 @@ Route::get("notification_delete/{id}", [ApiController::class, "notification_dele
 
 
 Route::get("affiliate_link", [ApiController::class, "affiliate_link"]);
-Route::post("add_affiliate_link", [ApiController::class, "add_affiliate_link"]);
+// Route::post("add_affiliate_link", [ApiController::class, "add_affiliate_link"]);
 
-Route::get("edit_affiliate_link/{id}", [ApiController::class, "edit_affiliate_link"]);
-Route::post("update_affiliate_link", [ApiController::class, "update_affiliate_link"]);
+// Route::get("edit_affiliate_link/{id}", [ApiController::class, "edit_affiliate_link"]);
+// Route::post("update_affiliate_link", [ApiController::class, "update_affiliate_link"]);
 Route::get("affiliate_link_delete/{id}", [ApiController::class, "affiliate_link_delete"]);
 
 
 
 Route::get("affiliate_link", [ApiController::class, "affiliate_link"]);
-Route::post("add_affiliate_link", [ApiController::class, "add_affiliate_link"]);
+// Route::post("add_affiliate_link", [ApiController::class, "add_affiliate_link"]);
 
-Route::get("edit_affiliate_link/{id}", [ApiController::class, "edit_affiliate_link"]);
-Route::post("update_affiliate_link", [ApiController::class, "update_affiliate_link"]);
+// Route::get("edit_affiliate_link/{id}", [ApiController::class, "edit_affiliate_link"]);
+// Route::post("update_affiliate_link", [ApiController::class, "update_affiliate_link"]);
 Route::get("affiliate_link_delete/{id}", [ApiController::class, "affiliate_link_delete"]);
 
 

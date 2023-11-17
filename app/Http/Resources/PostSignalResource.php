@@ -2,18 +2,20 @@
 
 namespace App\Http\Resources;
 
+use App\Models\FavouriteSignal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class PostSignalResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
+
+
     public function toArray(Request $request): array
     {
+        $is_favourite  = false;
+        $favSignal = FavouriteSignal::where(['user_id' => Auth::user()->id, 'post_signal_id' => $this->id])->first();
+        if ($favSignal) $is_favourite  = true;
         $data = [
             'id' => $this->id == null ? "" : $this->id,
             'currency_pair' => $this->currency_pair == null ? "" : $this->currency_pair,
@@ -31,10 +33,10 @@ class PostSignalResource extends JsonResource
             'open_price' => $this->open_price == null ? "" : $this->open_price,
             'type' => $this->type == null ? "" : $this->type,
             'role' => $this->role == null ? "" : $this->role,
+            'is_favourite' => $is_favourite,
             'timeframe' => $this->timeframe == null ? "" : $this->timeframe,
             'created_at' => $this->created_at->format('Y-m-d h:i:s'),
             'updated_at' => $this->updated_at->format('Y-m-d h:i:s'),
-
         ];
 
         return $data;
