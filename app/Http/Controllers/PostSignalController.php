@@ -67,6 +67,9 @@ class PostSignalController extends Controller
             }
 
             $postSignal = $this->filter($request, $postSignal);
+
+
+
             $count = $postSignal->count();
             $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
 
