@@ -5,6 +5,8 @@ use App\Http\Controllers\AffiliateLinkController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PostSignalController;
 
@@ -22,13 +24,15 @@ use App\Http\Controllers\PostSignalController;
 */
 
 
-
 Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('signup', 'signup')->name('user.signup');
     Route::post('login', 'login')->name('user.login');
     Route::post('socialSignup', 'socialSignup');
     // Route::post('/socialLogin', 'socialLogin');
     Route::post('forget-password', 'forget');
+    Route::get('setting', 'setting')->middleware("auth:sanctum");
+    Route::post('feedback', 'feedback')->middleware("auth:sanctum");
+    Route::post('contact-us', 'contactUs')->middleware("auth:sanctum");
     Route::post('update/profile', 'updateProfile')->middleware("auth:sanctum")->name('user.updateProfile');
     Route::post('verify/otp', 'verifyOtp')->middleware("auth:sanctum")->name('user.verifyOtp');
     Route::get('regenerate/otp', 'regenerateOtp')->middleware("auth:sanctum")->name('user.regenerateOtp');
@@ -45,6 +49,12 @@ Route::middleware('auth:sanctum')->prefix('user/')->group(
                 Route::get("favourite", "getFavourite");
             }
         );
+        Route::controller(MembershipController::class)->prefix('ib-broker/')->group(
+            function () {
+                Route::post("add", "addIbBroker");
+                Route::get("listing", "ibBrokerListing");
+            }
+        );
     }
 );
 
@@ -54,15 +64,17 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
             function () {
                 Route::post("add", "addAdmin");
                 Route::get("detail/{id}", "detailAdmin");
-                Route::post("update", "updateAdmin");
+                // Route::post("update", "updateAdmin");
                 Route::delete('/{id}', 'destroy');
             }
         );
+
         Route::controller(PostSignalController::class)->prefix('signals/')->group(
             function () {
                 Route::post("create", "store");
             }
         );
+
         Route::controller(AffiliateLinkController::class)->prefix('affiliate/links/')->group(
             function () {
                 Route::post("add", "store");
@@ -76,6 +88,24 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
                 Route::get("listing", "show");
                 Route::get("/{id}", "edit");
                 Route::delete('/{id}', 'destroy');
+            }
+        );
+
+        Route::controller(NotificationController::class)->prefix('notifications/')->group(
+            function () {
+                Route::post("add", "store");
+                Route::get("listing", "show");
+                Route::delete("delete/{id}", "destroy");
+            }
+        );
+
+        Route::controller(MembershipController::class)->prefix('membership/')->group(
+            function () {
+                Route::post("add", "store");
+                // Route::post("add/user", "addUsers");
+                Route::get("listing/user", "listingUsers");
+                Route::post("add/premium/user", "addPremiumUsers");
+                // Route::get("listing/premium/user", "listingPremiumUsers");
             }
         );
     }

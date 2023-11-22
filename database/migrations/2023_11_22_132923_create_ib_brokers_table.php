@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifications', function (Blueprint $table) {
+        Schema::create('ib_brokers', function (Blueprint $table) {
             $table->id();
-            $table->text('content')->nullable();
+            $table->string('account_no')->nullable();
+            $table->string('email')->nullable();
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }
@@ -23,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('notifications');
+        Schema::dropIfExists('ib_brokers');
     }
 };

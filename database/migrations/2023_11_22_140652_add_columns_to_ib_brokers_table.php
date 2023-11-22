@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifications', function (Blueprint $table) {
-            $table->id();
-            $table->text('content')->nullable();
-            $table->timestamps();
+        Schema::table('ib_brokers', function (Blueprint $table) {
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->nullable()->references('id')->on('users')->onDelete('cascade');
         });
     }
 
@@ -23,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('notifications');
+        Schema::table('ib_brokers', function (Blueprint $table) {
+            $table->dropColumn('user_id');
+        });
     }
 };

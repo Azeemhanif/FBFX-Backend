@@ -53,4 +53,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(FavouriteSignal::class, 'user_id', 'id');
     }
+
+    public function ibBroker()
+    {
+        return $this->hasOne(IbBroker::class)->where('status', 'complete');
+    }
 }

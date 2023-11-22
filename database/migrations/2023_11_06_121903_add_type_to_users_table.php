@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('fb_token')->nullable();
             $table->string('reset_password_link')->nullable();
             $table->tinyInteger('is_verified')->default(0);
+            $table->tinyInteger('is_notification')->default(1);
         });
     }
 

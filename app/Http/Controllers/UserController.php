@@ -8,6 +8,8 @@ use App\Models\admin;
 use App\Models\User;
 use App\Mail\OTPMail;
 use App\Mail\ResetPasswordMail;
+use App\Models\ContactUs;
+use App\Models\Feedback;
 use Illuminate\Support\Facades\Hash;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
@@ -388,9 +390,7 @@ class UserController extends Controller
 
             $input = $request->all();
 
-            $user = new User;
-            $user->email = $input['email'];
-            $user->password = 'password123';
+            $user =  User::where('email', $input['email'])->first();
             $user->role = 'admin';
             $user->save();
             $collection = new LoginResource($user);
@@ -401,27 +401,27 @@ class UserController extends Controller
         }
     }
 
+    // not working 
+    // public function updateAdmin(Request $request)
+    // {
+    //     try {
+    //         $validatorResult = $this->checkValidations(FBFXValidations::editAdminValidate($request));
+    //         if ($validatorResult) return $validatorResult;
 
-    public function updateAdmin(Request $request)
-    {
-        try {
-            $validatorResult = $this->checkValidations(FBFXValidations::editAdminValidate($request));
-            if ($validatorResult) return $validatorResult;
+    //         $input = $request->all();
+    //         $data = User::where('id', $input['id'])->where('role', 'admin')->first();
+    //         if (!$data)
+    //             return sendResponse(202, 'Admin does not exists!',  (object)[]);
+    //         $data->email = $input['email'];
+    //         $data->save();
 
-            $input = $request->all();
-            $data = User::where('id', $input['id'])->where('role', 'admin')->first();
-            if (!$data)
-                return sendResponse(202, 'Admin does not exists!',  (object)[]);
-            $data->email = $input['email'];
-            $data->save();
-
-            $collection = new LoginResource($data);
-            return sendResponse(200, 'Admin updated successfully!',  $collection);
-        } catch (\Exception $ex) {
-            $response = sendResponse(500, $ex->getMessage(), (object)[]);
-            return $response;
-        }
-    }
+    //         $collection = new LoginResource($data);
+    //         return sendResponse(200, 'Admin updated successfully!',  $collection);
+    //     } catch (\Exception $ex) {
+    //         $response = sendResponse(500, $ex->getMessage(), (object)[]);
+    //         return $response;
+    //     }
+    // }
 
 
     public function detailAdmin(Request $request, $id)
@@ -477,6 +477,74 @@ class UserController extends Controller
     }
 
 
+
+
+    public function feedback(Request $request)
+    {
+        try {
+            $validatorResult = $this->checkValidations(FBFXValidations::validateFeedback($request));
+            if ($validatorResult) return $validatorResult;
+            $input = $request->all();
+            $id   =  Auth::user()->id;
+
+            $feedback = new Feedback();
+            $feedback->description = $input['description'];
+            $feedback->user_id = $id;
+            $feedback->save();
+
+            return  sendResponse(200, 'Feedback created successfully', (object)[]);
+        } catch (\Exception $ex) {
+            // DB::rollback();
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+    public function contactUs(Request $request)
+    {
+        try {
+            $validatorResult = $this->checkValidations(FBFXValidations::validateContactUs($request));
+            if ($validatorResult) return $validatorResult;
+            $input = $request->all();
+
+            $contact = new ContactUs();
+            $contact->first_name = $input['first_name'];
+            $contact->last_name = $input['last_name'];
+            $contact->email = $input['email'];
+            $contact->phone = $input['phone'];
+            $contact->message = $input['message'];
+            $contact->save();
+            return  sendResponse(200, 'Contact created successfully', (object)[]);
+        } catch (\Exception $ex) {
+            // DB::rollback();
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+
+
+    public function setting(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $data = true;
+            $message = "Notfication turned on successfully!";
+
+            if ($user->is_notification == true) {
+                $data = false;
+                $message = "Notfication turned off successfully!";
+            }
+            $user->is_notification = $data;
+            $user->save();
+            $response = new UserResource($user);
+            return  sendResponse(200, $message, $response);
+        } catch (\Exception $ex) {
+            // DB::rollback();
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
     public function destroy($id)
     {
         try {

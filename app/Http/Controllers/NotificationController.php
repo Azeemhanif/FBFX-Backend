@@ -2,17 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\NotificationResource;
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
+use App\Validations\FBFXValidations;
+use App\Traits\{ValidationTrait};
+use App\Traits\{NotificationTrait};
+use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
+
+    public $successStatus = 200;
+    use  ValidationTrait, NotificationTrait;
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
     }
 
     /**
@@ -28,15 +37,55 @@ class NotificationController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $validatorResult = $this->checkValidations(FBFXValidations::validateCreateNotification($request));
+            if ($validatorResult) return $validatorResult;
+            $input = $request->all();
+            $message = 'Notification created successfully!';
+
+            $notification = new Notification();
+            if (isset($input['id'])) {
+                $message = 'Notification updated successfully!';
+                $notification = Notification::where('id', $input['id'])->first();
+            }
+            $notification->deliver_from = Auth::user()->id;
+            $notification->content = $input['content'];
+            $notification->type = 'info';
+            $notification->save();
+
+            $userIds = User::where('role', '!=', 'admin')->pluck('id');
+            $this->sendToAllUsers($input, $userIds);
+            $response = new NotificationResource($notification);
+            return sendResponse(200, $message, $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Notification $notification)
+    public function show(Request $request)
     {
-        //
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+
+            $notification = Notification::query();
+
+            $count = $notification->count();
+            $data = $notification->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+            $collection = NotificationResource::collection($data);
+            $response = [
+                'totalCount' => $count,
+                'notifications' => $collection,
+            ];
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
     }
 
     /**
@@ -58,8 +107,19 @@ class NotificationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Notification $notification)
+    public function destroy($id)
     {
-        //
+        try {
+            $notification = Notification::where('id', '=', $id)->delete();
+
+            if (!$notification) {
+                return sendResponse(202, 'Notification does not exists!', (object)[]);
+            }
+
+            return sendResponse(200, 'Notification deleted successfully!', (object)[]);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
     }
 }
