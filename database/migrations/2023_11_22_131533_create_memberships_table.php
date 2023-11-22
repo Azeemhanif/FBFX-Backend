@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifications', function (Blueprint $table) {
+        Schema::create('memberships', function (Blueprint $table) {
             $table->id();
-            $table->text('content')->nullable();
+            $table->string('monthly_price')->nullable();
+            $table->string('yearly_price')->nullable();
             $table->timestamps();
         });
     }
@@ -23,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('notifications');
+        Schema::dropIfExists('memberships');
     }
 };

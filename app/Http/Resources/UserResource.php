@@ -32,6 +32,8 @@ class UserResource extends JsonResource
             'fb_token' => $this->fb_token == null ? "" : $this->fb_token,
             'plan' => $this->plan == null ? "" : $this->plan,
             'is_otp_verified' => $this->is_otp_verified == 1 ? "Y" : "N",
+            'is_notification' => $this->is_notification == 1 ? "Y" : "N",
+
         ];
 
         return $data;

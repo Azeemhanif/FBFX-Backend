@@ -248,6 +248,8 @@ class FBFXValidations
 
 
 
+
+
     public static function detailAdminValidate($request)
     {
         $validator = Validator::make(
@@ -273,6 +275,101 @@ class FBFXValidations
                 'description' => 'required',
                 'url' => 'required',
                 'youtube' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+
+
+    public static function validateCreateNotification($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'content' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+    public static function validateFeedback($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'description' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+    public static function validateContactUs($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'first_name' => 'required',
+                'last_name' => 'required',
+                'email' => 'required|email',
+                'phone' => 'required',
+                'message' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+    public static function validateCreateMembership($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'monthly_price' => 'required',
+                'yearly_price' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+
+
+    public static function validateIbBroker($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'account_no' => 'required',
+                'email' => 'required|email',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+    public static function validatePremiumUsers($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'membership_type' => 'required',
+                'email' => 'required|email',
             ]
         )->stopOnFirstFailure(true);
 
