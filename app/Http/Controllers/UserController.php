@@ -10,6 +10,7 @@ use App\Mail\OTPMail;
 use App\Mail\ResetPasswordMail;
 use App\Models\ContactUs;
 use App\Models\Feedback;
+use App\Models\PostSignal;
 use Illuminate\Support\Facades\Hash;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
@@ -17,6 +18,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class UserController extends Controller
 {
@@ -53,6 +55,11 @@ class UserController extends Controller
     {
         $userId = optional($request->user())->id;
 
+        $role = 'user';
+        if (isset($input['role']) && $input['role']) {
+            $role = $input['role'];
+        }
+
         $userData = [
             'first_name' => $input['first_name'],
             'last_name' => $input['last_name'],
@@ -61,6 +68,7 @@ class UserController extends Controller
             'otp_expiry_time' => Carbon::now()->addMinutes(15),
             'password' => bcrypt($input['password']),
             'mobile' => $input['mobile'],
+            'role' => $role,
         ];
 
         $user = User::updateOrCreate(['id' => $userId], $userData);
@@ -390,7 +398,10 @@ class UserController extends Controller
 
             $input = $request->all();
 
-            $user =  User::where('email', $input['email'])->first();
+            $user =  User::where(['email' => $input['email'], 'role' => 'user'])->first();
+            if (!$user)
+                return sendResponse(202, 'User does not exists!', (object)[]);
+
             $user->role = 'admin';
             $user->save();
             $collection = new LoginResource($user);
@@ -400,6 +411,19 @@ class UserController extends Controller
             return $response;
         }
     }
+
+    public function listingAdmin(Request $request)
+    {
+        try {
+            $user =  User::where(['role' => 'admin'])->where('id', '!=', Auth::user()->id)->orderBy('id', 'DESC')->get();
+            $collection =  LoginResource::collection($user);
+            return sendResponse(200, 'Listing fetched successfully!',  $collection);
+        } catch (\Exception $ex) {
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
 
     // not working 
     // public function updateAdmin(Request $request)
@@ -446,9 +470,9 @@ class UserController extends Controller
             $validatorResult = $this->checkValidations(FBFXValidations::validateUpdateUser($request));
             if ($validatorResult) return $validatorResult;
             $input = $request->all();
-            $id   =  Auth::user()->id;
+            // $id   =  Auth::user()->id;
 
-            $user = User::where('id', $id)->first();
+            $user = User::where('id', $input['id'])->first();
             if (!$user)
                 return sendResponse(202, 'User does not exists!',  (object)[]);
 
@@ -543,6 +567,145 @@ class UserController extends Controller
             // DB::rollback();
             $response = sendResponse(500, $ex->getMessage(), (object)[]);
             return $response;
+        }
+    }
+
+    public function testCronJob()
+    {
+        $signals = PostSignal::where('closed', 'no')->get();
+
+        foreach ($signals as $signal) {
+            $tp1 = $signal->profit_one;
+            $tp2 = $signal->profit_two;
+            $tp3 = $signal->profit_three;
+            $stop_loss = $signal->stop_loss;
+            $currency_pair = $signal->currency_pair;
+
+            // Make API request
+            $response = Http::get('https://api.twelvedata.com/time_series', [
+                'symbol' => 'AAPL,EUR/USD,ETH/BTC:Huobi,TRP:TSX',
+                'interval' => '1min',
+                'apikey' => 'acab338c6b924d6ebfa6183fc4a2491e',
+            ]);
+
+            // Check if the request was successful
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data) && count($data) > 0) {
+                    $EURUSD = null;
+                    $closePrice = null;
+                    if (isset($data['EUR/USD']) && $currency_pair == 'EUR/USD') {
+                        $EURUSD =   $data['EUR/USD'];
+                        if (isset($EURUSD)) {
+                            $closePrice = $EURUSD['values'][0]['close'];
+                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                                $signal->tp1_status = true;
+                            }
+                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                                $signal->tp2_status = true;
+                            }
+                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                                $signal->tp3_status = true;
+                            }
+                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                                $signal->stop_loss_status = $closePrice;
+                            }
+                            if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
+                                $signal->close_price_status = $closePrice;
+                                $signal->closed = 'yes';
+                            }
+                            $signal->save();
+                        }
+                    }
+
+                    if (isset($data['AAPL']) && $currency_pair == 'AAPL') {
+                        $EURUSD =   $data['AAPL'];
+                        if (isset($EURUSD)) {
+                            $closePrice = $EURUSD['values'][0]['close'];
+                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                                $signal->tp1_status = true;
+                            }
+                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                                $signal->tp2_status = true;
+                            }
+                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                                $signal->tp3_status = true;
+                            }
+                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                                $signal->stop_loss_status = $closePrice;
+                            }
+                            if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
+                                $signal->close_price_status = $closePrice;
+                                $signal->closed = 'yes';
+                            }
+                            $signal->save();
+                        }
+                    }
+
+                    if (isset($data['ETH/BTC:Huobi']) && $currency_pair == 'ETH/BTC:Huobi') {
+                        $EURUSD =   $data['ETH/BTC:Huobi'];
+                        if (isset($EURUSD)) {
+                            $closePrice = $EURUSD['values'][0]['close'];
+                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                                $signal->tp1_status = true;
+                            }
+                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                                $signal->tp2_status = true;
+                            }
+                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                                $signal->tp3_status = true;
+                            }
+                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                                $signal->stop_loss_status = $closePrice;
+                            }
+                            if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
+                                $signal->close_price_status = $closePrice;
+                                $signal->closed = 'yes';
+                            }
+                            $signal->save();
+                        }
+                    }
+
+                    if (isset($data['TRP:TSX']) && $currency_pair == 'TRP:TSX') {
+                        $EURUSD =   $data['TRP:TSX'];
+                        if (isset($EURUSD)) {
+                            $closePrice = $EURUSD['values'][0]['close'];
+                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                                $signal->tp1_status = true;
+                            }
+                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                                $signal->tp2_status = true;
+                            }
+                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                                $signal->tp3_status = true;
+                            }
+                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                                $signal->stop_loss_status = $closePrice;
+                            }
+                            if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
+                                $signal->close_price_status = $closePrice;
+                                $signal->closed = 'yes';
+                            }
+                            $signal->save();
+                        }
+                    }
+
+
+                    \Log::info('API response: ' . json_encode($EURUSD));
+                }
+            } else {
+                \Log::error('API request failed. Status code: ' . $response->status());
+            }
+
+            $currentTime = date('H:i');
+            if ($currentTime === '15:00') {
+                $signal->closed = 'yes';
+                $signal->close_price_status = $closePrice;
+
+                $signal->save();
+            }
+
+            \Log::info('Task started');
         }
     }
     public function destroy($id)

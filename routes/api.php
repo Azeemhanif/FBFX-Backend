@@ -30,6 +30,8 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('socialSignup', 'socialSignup');
     // Route::post('/socialLogin', 'socialLogin');
     Route::post('forget-password', 'forget');
+    Route::get('testCronJob', 'testCronJob');
+
     Route::get('setting', 'setting')->middleware("auth:sanctum");
     Route::post('feedback', 'feedback')->middleware("auth:sanctum");
     Route::post('contact-us', 'contactUs')->middleware("auth:sanctum");
@@ -55,6 +57,17 @@ Route::middleware('auth:sanctum')->prefix('user/')->group(
                 Route::get("listing", "ibBrokerListing");
             }
         );
+
+        Route::controller(AffiliateLinkController::class)->prefix('affiliate/links/')->group(
+            function () {
+                Route::get("/{id}", "edit");
+            }
+        );
+        Route::controller(AcademyController::class)->prefix('academy/')->group(
+            function () {
+                Route::get("listing", "show");
+            }
+        );
     }
 );
 
@@ -64,7 +77,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
             function () {
                 Route::post("add", "addAdmin");
                 Route::get("detail/{id}", "detailAdmin");
-                // Route::post("update", "updateAdmin");
+                Route::get("listing", "listingAdmin");
                 Route::delete('/{id}', 'destroy');
             }
         );
@@ -105,7 +118,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
                 // Route::post("add/user", "addUsers");
                 Route::get("listing/user", "listingUsers");
                 Route::post("add/premium/user", "addPremiumUsers");
-                // Route::get("listing/premium/user", "listingPremiumUsers");
+                Route::get("listing/premium/user", "listingPremiumUsers");
             }
         );
     }

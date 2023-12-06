@@ -47,6 +47,8 @@ class NotificationController extends Controller
             if (isset($input['id'])) {
                 $message = 'Notification updated successfully!';
                 $notification = Notification::where('id', $input['id'])->first();
+                if (!$notification)
+                    return sendResponse(202, 'Notification does not exists!', (object)[]);
             }
             $notification->deliver_from = Auth::user()->id;
             $notification->content = $input['content'];

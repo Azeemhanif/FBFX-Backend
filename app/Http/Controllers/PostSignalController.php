@@ -95,7 +95,7 @@ class PostSignalController extends Controller
                 $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
             }
 
-            $postSignal =   $this->filter($request, $postSignal);
+            $postSignal = $this->filter($request, $postSignal);
 
             $count = $postSignal->count();
             $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
@@ -141,6 +141,8 @@ class PostSignalController extends Controller
         }
 
         // Timestamp-based filtering
+
+
         if ($request->has('Today') || $request->has('Yesterday') || $request->has('LastWeek')) {
             if ($request->has('Today')) {
                 $postSignal->whereDate('created_at', '=', now()->toDateString());

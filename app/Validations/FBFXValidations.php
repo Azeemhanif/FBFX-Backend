@@ -196,7 +196,7 @@ class FBFXValidations
         $validator = Validator::make(
             $request->all(),
             [
-                'email' => 'required|unique:users,email,' . $request->id,
+                'email' => 'required',
             ]
         )->stopOnFirstFailure(true);
 

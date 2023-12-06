@@ -30,6 +30,8 @@ class MembershipController extends Controller
             if (isset($input['id'])) {
                 $message = 'Membership updated successfully!';
                 $membership = Membership::where('id', $input['id'])->first();
+                if (!$membership)
+                    return sendResponse(202, 'Membership does not exists!', (object)[]);
             }
             $membership->monthly_price = $input['monthly_price'];
             $membership->yearly_price = $input['yearly_price'];
@@ -175,31 +177,35 @@ class MembershipController extends Controller
 
 
 
-    // public function listingPremiumUsers(Request $request)
-    // {
-    //     try {
-    //         $page = $request->query('page', 1);
-    //         $limit = $request->query('limit', 10);
-    //         $limit = $request->query('type', 'all');
+    public function listingPremiumUsers(Request $request)
+    {
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+            $type = $request->query('type', 'all');
 
-    //         if ($limit = 'premium') {
-    //             $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
-    //             $users  = User::whereIn('user_id', $premiumMemberIds);
-    //         }
-    //         if ($limit = 'all') {
-    //             $users  = User::where('role', 'user')->query();
-    //         }
-    //         $count = $users->count();
-    //         $data = $users->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
-    //         $collection = UserResource::collection($data);
-    //         $response = [
-    //             'totalCount' => $count,
-    //             'users' => $collection,
-    //         ];
-    //         return sendResponse(200, 'Data fetching successfully!', $response);
-    //     } catch (\Throwable $th) {
-    //         $response = sendResponse(500, $th->getMessage(), (object)[]);
-    //         return $response;
-    //     }
-    // }
+            $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
+            if ($type == 'premium') {
+                $users  = User::whereIn('id', $premiumMemberIds);
+            }
+            if ($type == 'free') {
+                $users  = User::where('role', 'user')->whereNotIn('id', $premiumMemberIds);
+            }
+            if ($type == 'all') {
+                $users = User::where('role', 'user');
+            }
+
+            $count = $users->count();
+            $data = $users->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+            $collection = UserResource::collection($data);
+            $response = [
+                'totalCount' => $count,
+                'users' => $collection,
+            ];
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
 }
