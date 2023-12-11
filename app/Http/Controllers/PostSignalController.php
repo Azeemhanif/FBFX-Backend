@@ -223,16 +223,48 @@ class PostSignalController extends Controller
     {
         try {
             $postSignal = PostSignal::find($id);
-            if (!$postSignal)
-                return sendResponse(202, 'Data does not exists!', (object)[]);
+
+            if (!$postSignal) {
+                return sendResponse(202, 'Data does not exist!', (object)[]);
+            }
+
+            // Calculate running pips based on the conditions
+            $openPrice = $postSignal->open_price;
+            $closePriceStatus = $postSignal->close_price_status;
+            $action = $postSignal->action;
+            $currencyPair = $postSignal->currency_pair;
+
+            // Calculate running pips for different actions and currency pairs
+            if (in_array($currencyPair, ['EURUSD', 'gold'])) {
+                $runningPips = round(($closePriceStatus - $openPrice) * 10000, 2);
+            } elseif (strpos($currencyPair, 'JPY') !== false) {
+                $runningPips = round(($closePriceStatus - $openPrice) * 100, 2);
+            } else {
+                // Handle other currency pairs if needed
+                $runningPips = 0;
+            }
+            // Calculate pipsEarned and pipsLost based on the 4th digit after the decimal point
+            // $pipsEarned = round($closePriceStatus - $openPrice, 4) * 10000;
+            // $pipsLost = round($openPrice - $closePriceStatus, 4) * 10000;
+
+            $totalSignals = PostSignal::where(['closed' => 'no'])->count();
 
             $collection = new PostSignalResource($postSignal);
-            return sendResponse(200, 'Data fetching successfully!', $collection);
+            $data = [
+                'totalSignals' => $totalSignals,
+                // 'pipsEarned' => $pipsEarned,
+                // 'pipsLost' => $pipsLost,
+                'runningPips' => $runningPips,
+                'collection' => $collection,
+            ];
+
+            return sendResponse(200, 'Data fetching successfully!', $data);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);
             return $response;
         }
     }
+
 
     /**
      * Update the specified resource in storage.

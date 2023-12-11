@@ -38,6 +38,7 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('update/profile', 'updateProfile')->middleware("auth:sanctum")->name('user.updateProfile');
     Route::post('verify/otp', 'verifyOtp')->middleware("auth:sanctum")->name('user.verifyOtp');
     Route::get('regenerate/otp', 'regenerateOtp')->middleware("auth:sanctum")->name('user.regenerateOtp');
+    Route::post('risk/calculator', 'riskCalculator')->middleware("auth:sanctum");
 });
 
 Route::middleware('auth:sanctum')->prefix('user/')->group(

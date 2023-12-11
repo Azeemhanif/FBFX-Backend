@@ -244,7 +244,23 @@ class FBFXValidations
         }
     }
 
+    public static function validateRiskCalculator($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'account_currency' => 'required',
+                'account_balance' => 'required',
+                'stop_loss' => 'required',
+                'risk_percentage' => 'required',
+                'currency_pair' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
 
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
 
 
 
