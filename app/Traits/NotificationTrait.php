@@ -14,6 +14,7 @@ trait NotificationTrait
     {
         $users[] = $ids;
         $data["message"] = $input['content'];
+
         $checkResponse = Device::sendPush($data, $users, "");
     }
 

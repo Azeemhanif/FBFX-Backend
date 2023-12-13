@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Mail\OTPMail;
 use App\Mail\ResetPasswordMail;
 use App\Models\ContactUs;
+use App\Models\Device;
 use App\Models\Feedback;
 use App\Models\PostSignal;
 use Illuminate\Support\Facades\Hash;
@@ -34,7 +35,7 @@ class UserController extends Controller
             $input = $request->all();
             $user = $this->updateOrCreateUser($request, $input);
 
-            // if (isset($input['device_type']))  $this->createOrUpdateDevice($input, $user);
+            if (isset($input['device_type']))  $this->createOrUpdateDevice($input, $user);
             $collection = new LoginResource($user);
             $collection->token = $user->createToken('API token of ' . $user->first_name)->plainTextToken;
 
@@ -91,7 +92,7 @@ class UserController extends Controller
         $user = User::where('email', $credentials['email'])->first();
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            // if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $user);
+            if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $user);
             $collection = new LoginResource($user);
             $user->tokens()->delete();
             $collection->token = $user->createToken('API token of ' . $user->first_name)->plainTextToken;
@@ -101,6 +102,62 @@ class UserController extends Controller
         }
     }
 
+    private function createOrUpdateDevice(array $input, $user)
+    {
+        $userCheck = Device::Where(['user_id' => $user->id])->orderBy('id', 'DESC')->first();
+        if ($userCheck == null) {
+            $userCheck = new Device();
+            $userCheck->device_type = $input['device_type'];
+            $userCheck->device_push_token = $input['device_push_token'];
+            $userCheck->device_uuid = $input['device_uuid'];
+            $userCheck->os_version = $input['os_version'];
+            $userCheck->user_id = $user->id;
+            $userCheck->save();
+        }
+
+        $device = Device::where(['user_id' => $user->id, 'device_uuid' => $input['device_uuid']])->first();
+        if ($device) {
+            $device_store = [
+                'user_id' => $user->id,
+                'device_uuid' => $input['device_uuid'],
+                'device_push_token' => $input['device_push_token'],
+                'device_type' => $input['device_type'],
+                'os_version' => $input['os_version'],
+            ];
+            $store = Device::where('user_id', $user->id)->update($device_store);
+        } else {
+            $device = Device::where(['device_uuid' => $input['device_uuid']])->first();
+            if ($device) {
+                $oldDevice = Device::where(['user_id' => $user->id])->first();
+                if ($oldDevice) {
+                    Device::sendPushToLogout($oldDevice->user_id); // Push to logout user from other devices
+
+                    $oldDevice->user_id = null;
+                    $oldDevice->device_uuid = null;
+                    $oldDevice->save();
+                }
+                $device->user_id = $user->id;
+                $device->save();
+            } else {
+                $oldDevice = Device::where(['user_id' => $user->id])->first();
+                if ($oldDevice) {
+                    Device::sendPushToLogout($oldDevice->user_id); // Push to logout user from other devices
+
+                    $oldDevice->user_id = null;
+                    $oldDevice->device_uuid = null;
+                    $oldDevice->save();
+                }
+                $device_store = [
+                    'user_id' => $user->id,
+                    'device_uuid' => $input['device_uuid'],
+                    'device_push_token' => $input['device_push_token'],
+                    'device_type' => $input['device_type'],
+                    'os_version' => $input['os_version'],
+                ];
+                $store = Device::create($device_store);
+            }
+        }
+    }
 
     public function verifyOtp(Request $request)
     {
@@ -233,11 +290,11 @@ class UserController extends Controller
                 $data->apple_token = $string;
             }
             $data->social_token = $string;
+            $data->role = 'user';
             $data->save();
             $data->loginFrom = $input['provider_type'];
-            $collection = new UserResource($data);
+            $collection = new LoginResource($data);
             $collection->token = $data->createToken('API token of ' . $data->first_name)->plainTextToken;
-
             return sendResponse(200, 'Registration Successful!', $collection);
             // }
         } catch (\Exception $ex) {
@@ -561,6 +618,7 @@ class UserController extends Controller
             $risk_percentage = $input['risk_percentage'] / 100;
             $expectedLoss = $account_balance * (-$risk_percentage);
             $total = -$expectedLoss / $stop_loss / 10;
+            $total = round($total, 2);
             return  sendResponse(200, 'Risk calculated successfully', $total);
         } catch (\Exception $ex) {
             $response = sendResponse(500, $ex->getMessage(), (object)[]);

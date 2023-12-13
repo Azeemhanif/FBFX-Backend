@@ -55,16 +55,16 @@ class SignalsJob extends Command
                         $EURUSD =   $data['EUR/USD'];
                         if (isset($EURUSD)) {
                             $closePrice = $EURUSD['values'][0]['close'];
-                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                            if ($tp1 <= $closePrice && $signal->tp1_status != true) {
                                 $signal->tp1_status = true;
                             }
-                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                            if ($tp2 <= $closePrice && $signal->tp2_status != true) {
                                 $signal->tp2_status = true;
                             }
-                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                            if ($tp3 <= $closePrice && $signal->tp3_status != true) {
                                 $signal->tp3_status = true;
                             }
-                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                            if ($stop_loss <= $closePrice && $signal->stop_loss_status == null) {
                                 $signal->stop_loss_status = $closePrice;
                             }
                             if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
@@ -79,16 +79,16 @@ class SignalsJob extends Command
                         $EURUSD =   $data['AAPL'];
                         if (isset($EURUSD)) {
                             $closePrice = $EURUSD['values'][0]['close'];
-                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                            if ($tp1 <= $closePrice && $signal->tp1_status != true) {
                                 $signal->tp1_status = true;
                             }
-                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                            if ($tp2 <= $closePrice && $signal->tp2_status != true) {
                                 $signal->tp2_status = true;
                             }
-                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                            if ($tp3 <= $closePrice && $signal->tp3_status != true) {
                                 $signal->tp3_status = true;
                             }
-                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                            if ($stop_loss <= $closePrice && $signal->stop_loss_status == null) {
                                 $signal->stop_loss_status = $closePrice;
                             }
                             if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
@@ -103,16 +103,16 @@ class SignalsJob extends Command
                         $EURUSD =   $data['ETH/BTC:Huobi'];
                         if (isset($EURUSD)) {
                             $closePrice = $EURUSD['values'][0]['close'];
-                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                            if ($tp1 <= $closePrice && $signal->tp1_status != true) {
                                 $signal->tp1_status = true;
                             }
-                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                            if ($tp2 <= $closePrice && $signal->tp2_status != true) {
                                 $signal->tp2_status = true;
                             }
-                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                            if ($tp3 <= $closePrice && $signal->tp3_status != true) {
                                 $signal->tp3_status = true;
                             }
-                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                            if ($stop_loss <= $closePrice && $signal->stop_loss_status == null) {
                                 $signal->stop_loss_status = $closePrice;
                             }
                             if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {
@@ -127,16 +127,16 @@ class SignalsJob extends Command
                         $EURUSD =   $data['TRP:TSX'];
                         if (isset($EURUSD)) {
                             $closePrice = $EURUSD['values'][0]['close'];
-                            if ($tp1 < $closePrice && $signal->tp1_status != true) {
+                            if ($tp1 <= $closePrice && $signal->tp1_status != true) {
                                 $signal->tp1_status = true;
                             }
-                            if ($tp2 < $closePrice && $signal->tp2_status != true) {
+                            if ($tp2 <= $closePrice && $signal->tp2_status != true) {
                                 $signal->tp2_status = true;
                             }
-                            if ($tp3 < $closePrice && $signal->tp3_status != true) {
+                            if ($tp3 <= $closePrice && $signal->tp3_status != true) {
                                 $signal->tp3_status = true;
                             }
-                            if ($stop_loss < $closePrice && $signal->stop_loss_status == null) {
+                            if ($stop_loss <= $closePrice && $signal->stop_loss_status == null) {
                                 $signal->stop_loss_status = $closePrice;
                             }
                             if ($signal->tp1_status == true && $signal->tp2_status == true && $signal->tp3_status == true) {

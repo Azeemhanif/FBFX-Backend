@@ -15,7 +15,6 @@ class Device extends Model
     {
         ini_set('memory_limit', '-1');
         set_time_limit(36000);
-
         if (empty($send_to)) {
             $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
             $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();

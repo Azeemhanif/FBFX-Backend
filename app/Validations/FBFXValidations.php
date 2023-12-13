@@ -232,10 +232,10 @@ class FBFXValidations
         $validator = Validator::make(
             $request->all(),
             [
-                'GPS' => 'required',
-                'trade' => 'required',
-                'PAMM' => 'required',
-                'IB_broker' => 'required',
+                // 'GPS' => 'required',
+                // 'trade' => 'required',
+                // 'PAMM' => 'required',
+                // 'IB_broker' => 'required',
             ]
         )->stopOnFirstFailure(true);
 

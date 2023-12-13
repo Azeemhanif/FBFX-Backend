@@ -17,6 +17,7 @@ return new class extends Migration
             $table->boolean('tp3_status')->default(0);
             $table->string('close_price_status')->nullable();
             $table->string('stop_loss_status')->nullable();
+            $table->string('currency')->nullable();
         });
     }
 

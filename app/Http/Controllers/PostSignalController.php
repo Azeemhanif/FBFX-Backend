@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
 use Illuminate\Support\Facades\Auth;
+use Psy\Readline\Hoa\Console;
 
 class PostSignalController extends Controller
 {
@@ -29,7 +30,7 @@ class PostSignalController extends Controller
             $postSignal = PostSignal::where('closed', '=', 'no');
 
             if ($search) {
-                $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
+                $postSignal->where('currency', 'LIKE', '%' . $search . '%');
             }
 
             $postSignal = $this->filter($request, $postSignal);
@@ -137,7 +138,7 @@ class PostSignalController extends Controller
         // Filter by currency pairs
         $currencyPairs = array_filter($request->only(['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY', 'XAUUSD', 'CrudeOil', 'XAGUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'US30', 'SP500', 'DXY']));
         if (!empty($currencyPairs)) {
-            $postSignal->whereIn('currency_pair', array_keys($currencyPairs));
+            $postSignal->whereIn('currency', array_keys($currencyPairs));
         }
 
         // Timestamp-based filtering
@@ -155,6 +156,12 @@ class PostSignalController extends Controller
                 $endLastWeek = now()->endOfWeek()->subWeek();
                 $postSignal->whereBetween('created_at', [$startLastWeek, $endLastWeek]);
             }
+        }
+        if ($request->has('startDate') && $request->has('endDate')) {
+            $startDate = $request->get('startDate');
+            $endDate = $request->get('endDate');
+            if ($startDate != null && $endDate != null)
+                $postSignal->whereDate('created_at', '>=', $startDate)->whereDate('created_at', '<=', $endDate);
         }
 
         return $postSignal;
@@ -233,29 +240,51 @@ class PostSignalController extends Controller
             $closePriceStatus = $postSignal->close_price_status;
             $action = $postSignal->action;
             $currencyPair = $postSignal->currency_pair;
+            $runningPips = 0;
 
             // Calculate running pips for different actions and currency pairs
-            if (in_array($currencyPair, ['EURUSD', 'gold'])) {
-                $runningPips = round(($closePriceStatus - $openPrice) * 10000, 2);
-            } elseif (strpos($currencyPair, 'JPY') !== false) {
-                $runningPips = round(($closePriceStatus - $openPrice) * 100, 2);
-            } else {
-                // Handle other currency pairs if needed
-                $runningPips = 0;
+            if ($closePriceStatus != null) {
+                if ($action == 'buy' || $action == 'Buy') {
+                    $runningPips = ($closePriceStatus - $openPrice) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+                } elseif ($action == 'sell' || $action == 'Sell') {
+                    $runningPips = ($openPrice - $closePriceStatus) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+                } else {
+                    $runningPips = 0;
+                }
+                $runningPips = round($runningPips, 2);
             }
-            // Calculate pipsEarned and pipsLost based on the 4th digit after the decimal point
-            // $pipsEarned = round($closePriceStatus - $openPrice, 4) * 10000;
-            // $pipsLost = round($openPrice - $closePriceStatus, 4) * 10000;
+
+            // Calculate total pips earned and total pips lost from all PostSignals
+            $postSignals = PostSignal::where('closed', 'yes')->orderByDesc('id')->get();
+            $totalPipsEarned = 0;
+            $totalPipsLost = 0;
+
+            foreach ($postSignals as $postSignal) {
+                $openPrice = $postSignal->open_price;
+                $closePriceStatus = $postSignal->close_price_status;
+                $action = $postSignal->action;
+                $currencyPair = $postSignal->currency_pair;
+
+                $pips = ($action == 'buy' || $action == 'Buy') ? $closePriceStatus - $openPrice : $openPrice - $closePriceStatus;
+
+                $pips *= ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+                $pips = round($pips, 2);
+
+                if ($action == 'buy' || $action == 'Buy') {
+                    $totalPipsEarned += $pips;
+                } elseif ($action == 'sell' || $action == 'Sell') {
+                    $totalPipsLost += $pips;
+                }
+            }
 
             $totalSignals = PostSignal::where(['closed' => 'no'])->count();
-
             $collection = new PostSignalResource($postSignal);
             $data = [
                 'totalSignals' => $totalSignals,
-                // 'pipsEarned' => $pipsEarned,
-                // 'pipsLost' => $pipsLost,
+                'pipsEarned' => $totalPipsEarned,
+                'pipsLost' => $totalPipsLost,
                 'runningPips' => $runningPips,
-                'collection' => $collection,
+                'data' => $collection,
             ];
 
             return sendResponse(200, 'Data fetching successfully!', $data);
@@ -289,6 +318,25 @@ class PostSignalController extends Controller
             }
             $collection = new PostSignalResource($postSignal);
             return sendResponse(200, $message, $collection);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+
+
+
+    public function manualClose($id)
+    {
+        try {
+            $postSignal = PostSignal::where('id', $id)->first();
+            if (!$postSignal)
+                return sendResponse(202, 'Signal does not exists!', (object)[]);
+            $postSignal->closed = 'yes';
+            $postSignal->save();
+            $collection = new PostSignalResource($postSignal);
+            return sendResponse(200, 'Signal closed successfully', $collection);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);
             return $response;

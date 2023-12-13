@@ -86,6 +86,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
         Route::controller(PostSignalController::class)->prefix('signals/')->group(
             function () {
                 Route::post("create", "store");
+                Route::get("manual/close/{id}", "manualClose");
             }
         );
 

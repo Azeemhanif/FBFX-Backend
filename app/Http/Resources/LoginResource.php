@@ -32,6 +32,7 @@ class LoginResource extends JsonResource
             'social_token' => $this->social_token == null ? "" : $this->social_token,
             'fb_token' => $this->fb_token == null ? "" : $this->fb_token,
             'is_otp_verified' => $this->is_otp_verified == 1 ? "Y" : "N",
+            'is_notification' => $this->is_notification == 1 ? "Y" : "N",
             'token' => $this->token == null ? "" : $this->token,
         ];
 
