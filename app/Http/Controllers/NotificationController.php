@@ -55,7 +55,7 @@ class NotificationController extends Controller
             $notification->type = 'info';
             $notification->save();
 
-            $userIds = User::where('role', '!=', 'admin')->pluck('id');
+            $userIds = User::pluck('id');
             $this->sendToAllUsers($input, $userIds);
             $response = new NotificationResource($notification);
             return sendResponse(200, $message, $response);
@@ -68,27 +68,7 @@ class NotificationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request)
-    {
-        try {
-            $page = $request->query('page', 1);
-            $limit = $request->query('limit', 10);
 
-            $notification = Notification::query();
-
-            $count = $notification->count();
-            $data = $notification->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
-            $collection = NotificationResource::collection($data);
-            $response = [
-                'totalCount' => $count,
-                'notifications' => $collection,
-            ];
-            return sendResponse(200, 'Data fetching successfully!', $response);
-        } catch (\Throwable $th) {
-            $response = sendResponse(500, $th->getMessage(), (object)[]);
-            return $response;
-        }
-    }
 
     /**
      * Show the form for editing the specified resource.

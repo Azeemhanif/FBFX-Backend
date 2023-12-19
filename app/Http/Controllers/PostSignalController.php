@@ -136,6 +136,8 @@ class PostSignalController extends Controller
         }
 
         // Filter by currency pairs
+        // $currencyPairs = array_filter($request->only([env('XADUSD'), env('EURUSD'), env('GBPUSD'), env('USDJPY'), env('USDCAD'), env('USDCHF'), env('AUDUSD'), env('NZDUSD'), env('EURJPY'), env('GBPJPY'), env('XAUUSD'), env('CrudeOil'), env('XAGUSD'), env('BTCUSD'), env('ETHUSD'), env('BNBUSD'), env('ADAUSD'), env('XRPUSD'), env('US30'), env('SP500'), env('DXY')]));
+
         $currencyPairs = array_filter($request->only(['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY', 'XAUUSD', 'CrudeOil', 'XAGUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'US30', 'SP500', 'DXY']));
         if (!empty($currencyPairs)) {
             $postSignal->whereIn('currency', array_keys($currencyPairs));
@@ -143,20 +145,32 @@ class PostSignalController extends Controller
 
         // Timestamp-based filtering
 
-
+        // if ($request->has('Today') && $request->has('Yesterday') && $request->has('LastWeek')) {
+        //     $startLastWeek =  now()->subDays(7)->toDateString();
+        //     $endLastWeek   = now()->toDateString();
+        //     $postSignal->whereDate('created_at', '>=', $startLastWeek);
+        // } else {
         if ($request->has('Today') || $request->has('Yesterday') || $request->has('LastWeek')) {
-            if ($request->has('Today')) {
-                $postSignal->whereDate('created_at', '=', now()->toDateString());
-            }
-            if ($request->has('Yesterday')) {
-                $postSignal->whereDate('created_at', '=', now()->subDay()->toDateString());
-            }
-            if ($request->has('LastWeek')) {
-                $startLastWeek = now()->startOfWeek()->subWeek();
-                $endLastWeek = now()->endOfWeek()->subWeek();
-                $postSignal->whereBetween('created_at', [$startLastWeek, $endLastWeek]);
-            }
+            $now = now();
+
+            $postSignal->where(function ($query) use ($now, $request) {
+                if ($request->has('LastWeek')) {
+                    $startLastWeek = $now->subDays(7)->toDateString();
+                    $endLastWeek = now()->toDateString();
+                    $query->orWhereDate('created_at', '>=', $startLastWeek);
+                }
+
+                if ($request->has('Today')) {
+                    $query->orWhereDate('created_at', '=', $now->toDateString());
+                }
+                if ($request->has('Yesterday')) {
+                    $query->orWhereDate('created_at', '=', $now->subDay()->toDateString());
+                }
+            });
         }
+
+        // }
+
         if ($request->has('startDate') && $request->has('endDate')) {
             $startDate = $request->get('startDate');
             $endDate = $request->get('endDate');
@@ -226,20 +240,19 @@ class PostSignalController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PostSignal $postSignal, $id)
+    public function edit($id)
     {
         try {
-            $postSignal = PostSignal::find($id);
+            $signalDetail = PostSignal::find($id);
 
-            if (!$postSignal) {
+            if (!$signalDetail) {
                 return sendResponse(202, 'Data does not exist!', (object)[]);
             }
-
             // Calculate running pips based on the conditions
-            $openPrice = $postSignal->open_price;
-            $closePriceStatus = $postSignal->close_price_status;
-            $action = $postSignal->action;
-            $currencyPair = $postSignal->currency_pair;
+            $openPrice = $signalDetail->open_price;
+            $closePriceStatus = $signalDetail->close_price_status;
+            $action = $signalDetail->action;
+            $currencyPair = $signalDetail->currency_pair;
             $runningPips = 0;
 
             // Calculate running pips for different actions and currency pairs
@@ -278,7 +291,7 @@ class PostSignalController extends Controller
             }
 
             $totalSignals = PostSignal::where(['closed' => 'no'])->count();
-            $collection = new PostSignalResource($postSignal);
+            $collection = new PostSignalResource($signalDetail);
             $data = [
                 'totalSignals' => $totalSignals,
                 'pipsEarned' => $totalPipsEarned,
@@ -327,12 +340,22 @@ class PostSignalController extends Controller
 
 
 
-    public function manualClose($id)
+    public function manualClose(Request $request)
     {
         try {
-            $postSignal = PostSignal::where('id', $id)->first();
+            $validatorResult = $this->checkValidations(FBFXValidations::validateManualClose($request));
+            if ($validatorResult) return $validatorResult;
+            $input = $request->all();
+
+            $postSignal = PostSignal::where('id', $input['id'])->first();
             if (!$postSignal)
                 return sendResponse(202, 'Signal does not exists!', (object)[]);
+
+            if (isset($request->pips) && $request->pips != null)
+                $postSignal->pips = $request->pips;
+            if (isset($request->close_price) && $request->close_price != null)
+                $postSignal->close_price = $request->close_price;
+
             $postSignal->closed = 'yes';
             $postSignal->save();
             $collection = new PostSignalResource($postSignal);
@@ -346,8 +369,18 @@ class PostSignalController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PostSignal $postSignal)
+    public function destroy($id)
     {
-        //
+        try {
+            $signal = PostSignal::where('id', $id)->first();
+            if (!$signal)
+                return sendResponse(202, 'Signal does not exists!', (object)[]);
+
+            $signal->delete();
+            return sendResponse(200, 'Signal deleted successfully!', (object)[]);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
     }
 }

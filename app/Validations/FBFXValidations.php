@@ -329,6 +329,22 @@ class FBFXValidations
         }
     }
 
+
+
+    public static function validateManualClose($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
     public static function validateContactUs($request)
     {
         $validator = Validator::make(

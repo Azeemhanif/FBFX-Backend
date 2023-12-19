@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\LoginResource;
+use App\Http\Resources\NotificationResource;
 use App\Http\Resources\UserResource;
 use App\Models\admin;
 use App\Models\User;
@@ -11,6 +12,7 @@ use App\Mail\ResetPasswordMail;
 use App\Models\ContactUs;
 use App\Models\Device;
 use App\Models\Feedback;
+use App\Models\Notification;
 use App\Models\PostSignal;
 use Illuminate\Support\Facades\Hash;
 use App\Validations\FBFXValidations;
@@ -90,6 +92,11 @@ class UserController extends Controller
         $credentials = $request->only('email', 'password');
 
         $user = User::where('email', $credentials['email'])->first();
+        if (!$user)
+            return sendResponse(422, 'The email does not exists', (object)[]);
+        if ($user->password == null || $user->password == '')
+            return sendResponse(202, 'Please enter valid credentials', (object)[]);
+
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $user);
@@ -178,7 +185,7 @@ class UserController extends Controller
             }
 
             if ($user->otp != $request->input('otp')) {
-                return sendResponse(202, 'Invalid OTP!', (object)[]);
+                return sendResponse(202, 'Please enter valid otp code!', (object)[]);
             }
             if (isset($user->otp_expiry_time) && \Carbon\Carbon::parse($user->otp_expiry_time)->isFuture()) {
                 $user->is_otp_verified = true;
@@ -275,6 +282,7 @@ class UserController extends Controller
             if (!empty($request->email)) {
                 $data = User::where(['email' => $request->email])->first();
             }
+
             if (!$data) {
                 $data = User::create($input);
             }
@@ -375,6 +383,11 @@ class UserController extends Controller
             $input = $request->all();
             $user = User::where('email', $input['email'])->first();
 
+            if ($user) {
+                if ($user->password == null || $user->password == '')
+                    return sendResponse(202, 'You are not allow to change password', (object)[]);
+            }
+
             $token = Str::random(60);
             $mailData = [
                 'token' => $token,
@@ -385,7 +398,7 @@ class UserController extends Controller
 
             $collection = new LoginResource($user);
             sendEmailToUser($request->email, new ResetPasswordMail($mailData));
-            return sendResponse(200, 'We have e-mailed otp for reset password!',  $collection);
+            return sendResponse(200, 'We have e-mailed link for reset password!',  $collection);
         } catch (\Exception $ex) {
             $response = sendResponse(500, $ex->getMessage(), (object)[]);
             return $response;
@@ -432,6 +445,8 @@ class UserController extends Controller
             $input = $request->all();
             $user = User::where('email', $request->email)->first();
             if ($user) {
+                // if ($user->password == null || $user->password == '')
+                // return back()->with('Error', 'You are not allow to change password.');
                 $user['is_verified'] = 0;
                 $user['reset_password_link'] = '';
                 $user['password'] = bcrypt($request->password);
@@ -455,9 +470,12 @@ class UserController extends Controller
 
             $input = $request->all();
 
-            $user =  User::where(['email' => $input['email'], 'role' => 'user'])->first();
+            $user =  User::where(['email' => $input['email']])->first();
             if (!$user)
                 return sendResponse(202, 'User does not exists!', (object)[]);
+
+            if ($user->role == 'admin')
+                return sendResponse(202, 'This account is already an admin!', (object)[]);
 
             $user->role = 'admin';
             $user->save();
@@ -612,9 +630,11 @@ class UserController extends Controller
             $validatorResult = $this->checkValidations(FBFXValidations::validateRiskCalculator($request));
             if ($validatorResult) return $validatorResult;
             $input = $request->all();
-
+            $total = 0;
             $account_balance = $input['account_balance'];
             $stop_loss = $input['stop_loss'];
+            if ($stop_loss == 0) $stop_loss = 1;
+
             $risk_percentage = $input['risk_percentage'] / 100;
             $expectedLoss = $account_balance * (-$risk_percentage);
             $total = -$expectedLoss / $stop_loss / 10;
@@ -649,6 +669,49 @@ class UserController extends Controller
     }
 
 
+    public function notificationListing(Request $request)
+    {
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+
+            $notification = Notification::where('deliver_from', '!=', Auth::user()->id);
+
+            $count = $notification->count();
+            $data = $notification->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+            $collection = NotificationResource::collection($data);
+            $response = [
+                'totalCount' => $count,
+                'notifications' => $collection,
+            ];
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+
+
+    public function usersListing(Request $request)
+    {
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+
+            $user = User::orderBy('id', 'DESC')->get();
+            // $count = $user->count();
+            // $data = $user->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+            $collection = UserResource::collection($user);
+            // $response = [
+            //     'users' => $collection,
+            // ];
+            return sendResponse(200, 'Data fetching successfully!', $collection);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
 
     public function testCronJob()
     {
@@ -791,9 +854,25 @@ class UserController extends Controller
     public function destroy($id)
     {
         try {
-            $user = User::where('id', '=', $id)->delete();
+            $user = User::where('id', '=', $id)->first();
             if (!$user) return  sendResponse(202, 'User does not exists', (object)[]);
-            return  sendResponse(200, 'User deleted successfully', (object)[]);
+            $user->role = 'user';
+            $user->save();
+            $data = new UserResource($user);
+
+            return  sendResponse(200, 'Deleted successfully', $data);
+        } catch (\Exception $ex) {
+            // DB::rollback();
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+    public function deleteAccount()
+    {
+        try {
+            $id = Auth::user()->id;
+            User::where('id', '=', $id)->delete();
+            return  sendResponse(200, 'Account deleted successfully', (object)[]);
         } catch (\Exception $ex) {
             // DB::rollback();
             $response = sendResponse(500, $ex->getMessage(), (object)[]);

@@ -23,6 +23,7 @@ class Device extends Model
             $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
         }
 
+
         if (!empty($ios_devices)) {
 
             $data["title"] = "FirstBuckFx";

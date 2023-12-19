@@ -31,6 +31,7 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     // Route::post('/socialLogin', 'socialLogin');
     Route::post('forget-password', 'forget');
     Route::get('testCronJob', 'testCronJob');
+    Route::get('listing', 'usersListing');
 
     Route::get('setting', 'setting')->middleware("auth:sanctum");
     Route::post('feedback', 'feedback')->middleware("auth:sanctum");
@@ -39,6 +40,8 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('verify/otp', 'verifyOtp')->middleware("auth:sanctum")->name('user.verifyOtp');
     Route::get('regenerate/otp', 'regenerateOtp')->middleware("auth:sanctum")->name('user.regenerateOtp');
     Route::post('risk/calculator', 'riskCalculator')->middleware("auth:sanctum");
+    Route::get("notifications/listing", "notificationListing")->middleware("auth:sanctum");
+    Route::delete('account', 'deleteAccount')->middleware("auth:sanctum");
 });
 
 Route::middleware('auth:sanctum')->prefix('user/')->group(
@@ -86,7 +89,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
         Route::controller(PostSignalController::class)->prefix('signals/')->group(
             function () {
                 Route::post("create", "store");
-                Route::get("manual/close/{id}", "manualClose");
+                Route::post("manual/close", "manualClose");
+                Route::delete("delete/{id}", "destroy");
             }
         );
 
@@ -109,7 +113,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
         Route::controller(NotificationController::class)->prefix('notifications/')->group(
             function () {
                 Route::post("add", "store");
-                Route::get("listing", "show");
                 Route::delete("delete/{id}", "destroy");
             }
         );
