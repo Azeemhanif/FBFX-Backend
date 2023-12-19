@@ -10,6 +10,7 @@ use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
 use Illuminate\Support\Facades\Auth;
 use Psy\Readline\Hoa\Console;
+use Carbon\Carbon;
 
 class PostSignalController extends Controller
 {
@@ -89,7 +90,55 @@ class PostSignalController extends Controller
             $page = $request->query('page', 1);
             $limit = $request->query('limit', 10);
             $search = $request->query('search', null);
+            $search = $request->query('search', null);
+            $currentMonth = Carbon::now()->format('m');
+            $month = $request->query('month', $currentMonth);
 
+            //signals on base of month
+            $monthSignals = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->get();
+            //get worst pip
+            $worstPip = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->min('pips');
+            //get best pip
+            $bestPip = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->max('pips');
+            $totalClosedSignals = $monthSignals->count();
+            $profabilityWin = 0;
+            $profabilityLoss = 0;
+            $pips = 0;
+
+            foreach ($monthSignals as $monthSignal) {
+                //for getting sum of all pips
+                $pips += $monthSignal->pips;
+                //for getting profiability of all signals
+                if ($monthSignal->close_price <= $monthSignal->close_price_status) {
+                    $profabilityWin += 1;
+                } else {
+                    $profabilityLoss += 1;
+                }
+            }
+            //for getting average  of all pips
+            $averagePips =   $pips / 10;
+            // for getting long wins or short wins, 
+            $buySignals =     $monthSignals->where('action', 'buy');
+            $sellSignals =     $monthSignals->where('action', 'sell');
+            $longwins = 0;
+            $shortwins = 0;
+            $totalBuySignals =  $buySignals->count();
+            $totalSellSignals =  $sellSignals->count();
+
+            foreach ($buySignals as  $buySignal) {
+                if ($buySignal->close_price <= $buySignal->close_price_status) {
+                    $longwins +=  1;
+                }
+            }
+            foreach ($sellSignals as  $sellSignal) {
+                if ($sellSignal->close_price >= $sellSignal->close_price_status) {
+                    $shortwins +=  1;
+                }
+            }
+
+
+
+            // all closed signals listing
             $postSignal = PostSignal::where('closed', '=', 'yes');
 
             if ($search) {
@@ -102,7 +151,19 @@ class PostSignalController extends Controller
             $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
 
             $collection = PostSignalResource::collection($data);
+
             $response = [
+                'totalClosedSignals' => $totalClosedSignals,
+                'profabilityLoss' => $profabilityLoss,
+                'profabilityWin' => $profabilityWin,
+                'pips' => $pips,
+                'averagePips' => $averagePips,
+                'longwon' => $longwins,
+                'shortwon' => $shortwins,
+                'totalLongWins' => $totalBuySignals,
+                'totalShortWins' => $totalSellSignals,
+                'bestPip' => $bestPip,
+                'worstPip' => $worstPip,
                 'totalCount' => $count,
                 'post_signals' => $collection,
             ];
@@ -112,6 +173,7 @@ class PostSignalController extends Controller
             return $response;
         }
     }
+
 
 
     /**
@@ -278,9 +340,13 @@ class PostSignalController extends Controller
                 $action = $postSignal->action;
                 $currencyPair = $postSignal->currency_pair;
 
-                $pips = ($action == 'buy' || $action == 'Buy') ? $closePriceStatus - $openPrice : $openPrice - $closePriceStatus;
+                if ($postSignal->pips == null || $postSignal->pips == '') {
+                    $pips = ($action == 'buy' || $action == 'Buy') ? $closePriceStatus - $openPrice : $openPrice - $closePriceStatus;
+                    $pips *= ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+                } else {
+                    $pips = $postSignal->pips;
+                }
 
-                $pips *= ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
                 $pips = round($pips, 2);
 
                 if ($action == 'buy' || $action == 'Buy') {

@@ -22,16 +22,16 @@ class PostSignalResource extends JsonResource
 
         // Calculate running pips for different actions and currency pairs
         $runningPips = 0;
-        if ($closePriceStatus != null) {
-            if ($action == 'buy' || $action == 'Buy') {
-                $runningPips = ($closePriceStatus - $openPrice) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
-            } elseif ($action == 'sell' || $action == 'Sell') {
-                $runningPips = ($openPrice - $closePriceStatus) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
-            } else {
-                $runningPips = 0;
-            }
-            $runningPips = round($runningPips, 2);
-        }
+        // if ($closePriceStatus != null) {
+        //     if ($action == 'buy' || $action == 'Buy') {
+        //         $runningPips = ($closePriceStatus - $openPrice) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+        //     } elseif ($action == 'sell' || $action == 'Sell') {
+        //         $runningPips = ($openPrice - $closePriceStatus) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+        //     } else {
+        //         $runningPips = 0;
+        //     }
+        //     $runningPips = round($runningPips, 2);
+        // }
         $is_favourite  = false;
         $favSignal = FavouriteSignal::where(['user_id' => Auth::user()->id, 'post_signal_id' => $this->id])->first();
         if ($favSignal) $is_favourite  = true;
@@ -48,7 +48,8 @@ class PostSignalResource extends JsonResource
             'profit_three' => $this->profit_three == null ? "" : $this->profit_three,
             'RRR' => $this->RRR == null ? "" : $this->RRR,
             'fvrt' => $this->fvrt == 1 ? "Y" : "N",
-            'worst_pips' => $runningPips,
+            // 'worst_pips' => $runningPips,
+            'pips' => $this->pips == null ? 0 : $this->pips,
             'closed' => $this->closed == null ? "" : $this->closed,
             'close_price' => $this->close_price == null ? "" : $this->close_price,
             'open_price' => $this->open_price == null ? "" : $this->open_price,

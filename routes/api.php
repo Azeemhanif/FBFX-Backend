@@ -32,8 +32,9 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('forget-password', 'forget');
     Route::get('testCronJob', 'testCronJob');
     Route::get('listing', 'usersListing');
-
+    Route::get('tokenListing', 'tokenListing');
     Route::get('setting', 'setting')->middleware("auth:sanctum");
+    Route::get('profile', 'profileDetail')->middleware("auth:sanctum");
     Route::post('feedback', 'feedback')->middleware("auth:sanctum");
     Route::post('contact-us', 'contactUs')->middleware("auth:sanctum");
     Route::post('update/profile', 'updateProfile')->middleware("auth:sanctum")->name('user.updateProfile');
