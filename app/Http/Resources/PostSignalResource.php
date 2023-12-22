@@ -62,8 +62,8 @@ class PostSignalResource extends JsonResource
             'tp3_status' => $this->tp3_status == null ? "" : $this->tp3_status,
             'close_price_status' => $this->close_price_status == null ? "" : $this->close_price_status,
             'stop_loss_status' => $this->stop_loss_status == null ? "" : $this->stop_loss_status,
-            'created_at' => $this->created_at->format('Y-m-d h:i:s'),
-            'updated_at' => $this->updated_at == null ? "" : $this->updated_at->format('Y-m-d h:i:s'),
+            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at == null ? "" : $this->updated_at->format('Y-m-d H:i:s'),
         ];
 
         return $data;

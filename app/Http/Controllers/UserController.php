@@ -766,7 +766,9 @@ class UserController extends Controller
                 $currencyData = $data[$currency_pair];
 
                 $closePrice = $currencyData['values'][0]['close'];
+
                 $this->updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss);
+
                 $this->logApiResponse($currency_pair, $currencyData);
                 $this->closeSignalIfTime($signal, $closePrice);
             }
@@ -817,9 +819,10 @@ class UserController extends Controller
     private function closeSignalIfTime($signal, $closePrice)
     {
         $currentTime = now()->format('H:i');
-        if ($currentTime === '15:00') {
+        if ($currentTime >= '15:00') {
             $signal->closed = 'yes';
             $signal->close_price_status = $closePrice;
+            $signal->stop_loss_status = $closePrice;
 
             $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy')
                 ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0)
