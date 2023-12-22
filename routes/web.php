@@ -21,3 +21,4 @@ Route::get('/', function () {
 
 Route::post('reset-password', [UserController::class, 'updatePassword'])->name('reset-password');
 Route::get('forgot-password/{token}', [UserController::class, 'forgotPasswordValidate']);
+Route::get('/scrape-table', [UserController::class, 'scrapeTable']);

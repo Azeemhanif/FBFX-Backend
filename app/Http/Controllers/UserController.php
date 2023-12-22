@@ -22,7 +22,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-
+use GuzzleHttp\Client;
+use Symfony\Component\DomCrawler\Crawler;
 class UserController extends Controller
 {
 
@@ -500,7 +501,7 @@ class UserController extends Controller
     }
 
 
-    // not working 
+    // not working
     // public function updateAdmin(Request $request)
     // {
     //     try {
@@ -861,5 +862,79 @@ class UserController extends Controller
             $response = sendResponse(500, $ex->getMessage(), (object)[]);
             return $response;
         }
+    }
+
+
+    public function scrapeTable(Request $request)
+    {
+        $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY','GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD','ADA-USD', 'XRP-USD','US-30', 'SP-500', 'DXY'];
+
+        $result = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/forex', $allowedClasses);
+        $result2 = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/crypto', $allowedClasses);
+
+        // Merge the two sets of data into a single array
+        $mergedResult = array_merge($result, $result2);
+
+        $signals = PostSignal::where('closed', 'no')->get();
+
+        foreach ($signals as $signal) {
+            $tp1 = $signal->profit_one;
+            $tp2 = $signal->profit_two;
+            $tp3 = $signal->profit_three;
+            $stop_loss = $signal->stop_loss;
+            $currency_pair = $signal->currency_pair;
+
+            if (isset($mergedResult[$currency_pair])) {
+                $currencyData = $mergedResult[$currency_pair];
+                $closePrice = $currencyData['price'] ?? 0;
+                $this->updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss);
+                $this->logApiResponse($currency_pair, $currencyData);
+                $this->closeSignalIfTime($signal, $closePrice);
+            }
+
+        }
+
+        // $mergedResult now contains an associative array with all_class as keys and price, bid, ask as values
+        dd($mergedResult);
+    }
+
+    private function scrapeData($url, $allowedClasses)
+    {
+        $formData = [
+            'draw' => '1',
+            'start' => '0',
+            'length' => '7250'
+        ];
+
+        $client = new Client();
+
+        $response = $client->post($url, [
+            'form_params' => $formData,
+        ]);
+
+        $data = json_decode($response->getBody(), true);
+        $result = [];
+
+        foreach ($data['aaData'] as $item) {
+            $allClass = $item['all_class'];
+
+            // Check if $allClass exists in the allowed classes
+            if (!in_array($allClass, $allowedClasses)) {
+                // If $allClass is not in the allowed classes, skip to the next iteration
+                continue;
+            }
+
+            $key = str_replace('-', '/', $allClass);
+
+            // Extracting the relevant values (price, bid, ask) based on the all_class value
+            $price = $item['price'];
+
+            // Create an associative array with all_class as the key and the extracted values as the value
+            $result[$key] = [
+                'price' => $price,
+            ];
+        }
+
+        return $result;
     }
 }
