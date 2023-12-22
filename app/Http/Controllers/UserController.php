@@ -22,7 +22,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-
+use GuzzleHttp\Client;
+use Symfony\Component\DomCrawler\Crawler;
 class UserController extends Controller
 {
 
@@ -500,7 +501,7 @@ class UserController extends Controller
     }
 
 
-    // not working 
+    // not working
     // public function updateAdmin(Request $request)
     // {
     //     try {
@@ -858,5 +859,52 @@ class UserController extends Controller
             $response = sendResponse(500, $ex->getMessage(), (object)[]);
             return $response;
         }
+    }
+
+
+    public function scrapeTable(Request $request)
+    {
+        $url = 'https://fxpricing.com/help/get_currencty_list_ajax/crypto';
+
+        $formData = [
+            'draw' => '1',
+            'start' => '0',
+            'length' => '7250'
+        ];
+
+        // Create a new Guzzle HTTP client
+        $client = new Client();
+
+        // Make the POST request with form data in the body
+        $response = $client->post($url, [
+            'form_params' => $formData,
+        ]);
+
+        // Get the response body as JSON
+        $data = json_decode($response->getBody(), true);
+        $result = [];
+
+        foreach ($data['aaData'] as $item) {
+            $allClass = $item['all_class'];
+
+//            $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY','GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD','ADA-USD', 'XRP-USD','US-30', 'SP-500', 'DXY'];
+//
+//            // Check if $allClass exists in the allowed classes
+//            if (!in_array($allClass, $allowedClasses)) {
+//                // If $allClass is not in the allowed classes, skip to the next iteration
+//                continue;
+//            }
+
+            // Extracting the relevant values (price, bid, ask) based on the all_class value
+            $price = $item['price'];
+
+            // Create an associative array with all_class as the key and the extracted values as the value
+            $result[$allClass] = [
+                'price' => $price,
+            ];
+        }
+
+        // $result now contains an associative array with all_class as keys and price, bid, ask as values
+        dd($result);
     }
 }
