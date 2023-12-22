@@ -122,6 +122,17 @@ class FBFXValidations
         }
     }
 
+
+    public static function validateLogout($request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
+            'device_uuid' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
     public static function forgetValidate($request)
     {
         $validator = Validator::make(

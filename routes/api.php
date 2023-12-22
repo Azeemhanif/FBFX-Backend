@@ -36,6 +36,7 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::get('setting', 'setting')->middleware("auth:sanctum");
     Route::get('profile', 'profileDetail')->middleware("auth:sanctum");
     Route::post('feedback', 'feedback')->middleware("auth:sanctum");
+    Route::post('logout', 'logout');
     Route::post('contact-us', 'contactUs')->middleware("auth:sanctum");
     Route::post('update/profile', 'updateProfile')->middleware("auth:sanctum")->name('user.updateProfile');
     Route::post('verify/otp', 'verifyOtp')->middleware("auth:sanctum")->name('user.verifyOtp');

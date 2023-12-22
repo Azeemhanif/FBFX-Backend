@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Client;
 use Symfony\Component\DomCrawler\Crawler;
+
 class UserController extends Controller
 {
 
@@ -737,6 +738,26 @@ class UserController extends Controller
         }
     }
 
+    public function logout(Request $request)
+    {
+        try {
+            $validatorResult = $this->checkValidations(FBFXValidations::validateLogout($request));
+            if ($validatorResult) return $validatorResult;
+            $input = $request->all();
+            $device = Device::Where(['user_id' => $input['user_id'], "device_uuid" => $input['device_uuid']])->orderBy('id', 'DESC')->first();
+            if ($device) {
+                $device->device_uuid = NULL;
+                $device->device_push_token = NULL;
+                $device->save();
+            }
+            return sendResponse(200, 'Logout Sucessfully!', (object)[]);
+            // return sendResponse(422, 'No device exists against this user!', $device);
+        } catch (\Exception $ex) {
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
     public function testCronJob()
     {
         $signals = PostSignal::where('closed', 'no')->get();
@@ -867,11 +888,10 @@ class UserController extends Controller
 
     public function scrapeTable(Request $request)
     {
-        $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY','GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD','ADA-USD', 'XRP-USD','US-30', 'SP-500', 'DXY'];
+        $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY', 'GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD', 'ADA-USD', 'XRP-USD', 'US-30', 'SP-500', 'DXY'];
 
         $result = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/forex', $allowedClasses);
         $result2 = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/crypto', $allowedClasses);
-
         // Merge the two sets of data into a single array
         $mergedResult = array_merge($result, $result2);
 
@@ -891,7 +911,6 @@ class UserController extends Controller
                 $this->logApiResponse($currency_pair, $currencyData);
                 $this->closeSignalIfTime($signal, $closePrice);
             }
-
         }
 
         // $mergedResult now contains an associative array with all_class as keys and price, bid, ask as values

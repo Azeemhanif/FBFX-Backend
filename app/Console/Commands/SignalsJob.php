@@ -6,6 +6,7 @@ use App\Models\PostSignal;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Storage;
 
 class SignalsJob extends Command
 {
@@ -30,7 +31,7 @@ class SignalsJob extends Command
         $stop_loss = $signal->stop_loss;
         $currency_pair = $signal->currency_pair;
 
-        $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY','GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD','ADA-USD', 'XRP-USD','US-30', 'SP-500', 'DXY'];
+        $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY', 'GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD', 'ADA-USD', 'XRP-USD', 'US-30', 'SP-500', 'DXY'];
 
         $result = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/forex', $allowedClasses);
         $result2 = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/crypto', $allowedClasses);
@@ -82,12 +83,23 @@ class SignalsJob extends Command
 
     private function logApiResponse($currencyPair, $data)
     {
-        \Log::info("API response for {$currencyPair}: " . json_encode($data));
+        $log = "API response for {$currencyPair}: " . json_encode($data);
+        self::testjobAction($log);
+
+        // \Log::info("API response for {$currencyPair}: " . json_encode($data));
+    }
+
+    private static function testjobAction($msg = 'From test job')
+    {
+        $file_name = "logs/Cron-" . date('Y-m') . ".txt";
+        $time = date('Y-m-d H:i:s');
+        Storage::append($file_name, "[{$time}] {$msg} \n");
     }
 
     private function logApiError($response)
     {
-        \Log::error('API request failed. Status code: ' . $response->status());
+        $log = 'API request failed. Status code: ' . $response->status();
+        self::testjobAction($log);
     }
 
     private function closeSignalIfTime($signal, $closePrice)
