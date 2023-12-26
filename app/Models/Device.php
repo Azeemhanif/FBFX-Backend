@@ -15,10 +15,11 @@ class Device extends Model
     {
         ini_set('memory_limit', '-1');
         set_time_limit(36000);
-        if (empty($send_to)) {
+        if (!empty($send_to)) {
             $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
             $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
         } else {
+
             $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
             $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
         }
@@ -88,9 +89,7 @@ class Device extends Model
         $url = 'https://fcm.googleapis.com/fcm/send';
         //api_key in Firebase Console -> Project Settings -> CLOUD MESSAGING -> Server key
 
-        //nareb working key
-        // $server_key = 'AAAAj8UXh3Q:APA91bHRruAasPcr5gHWOqe_Q8kpfowMsrsmzc3C7W3Th0_tqIag_-Aq0l4SgcUStgXZNC0Wh2l2ZiyLXS5HXLxmWgziOntcXIfa0YGAdm9_wBnO1tFtdm5YT7f2v82Zf5AumjQCqG4Q';
-        $server_key = "AAAAHzc33_M:APA91bFGdCvEtHrOCq_rPv1KGjgjLewQCNYgPtTLVnieSVrNCSKJPrmQroWMDjsoRA7KPRz8Yj1rVPW2G9siXSJQ-Z4nZ6d7lM4tU4HZJxRvvnLfuAqP4xf1YUVhHEwn8YtZwR48Yad2";
+        $server_key = "AAAAk8zvdlA:APA91bGFPpAyobG7jgy5-9elTQEWzRQbXctHnMUvg5J1PDJK-QSldunPMQSdua9ut7ili7lae_bL5ILCBvhQQ5ZBfZk6HosMuedBKHvOYM_VAru48dPLMvskZaxz-G9_Z0yBtc2U5dus";
 
         //header with content_type api key
         $headers = array(
