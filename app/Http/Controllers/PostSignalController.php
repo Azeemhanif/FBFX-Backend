@@ -84,75 +84,174 @@ class PostSignalController extends Controller
             return $response;
         }
     }
+    // public function history(Request $request)
+    // {
+    //     try {
+    //         $page = $request->query('page', 1);
+    //         $limit = $request->query('limit', 10);
+    //         $search = $request->query('search', null);
+    //         $search = $request->query('search', null);
+    //         $currentMonth = Carbon::now()->format('m');
+    //         $month = $request->query('month', $currentMonth);
+    //         //signals on base of month
+    //         $monthSignals = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->get();
+    //         //get worst pip
+    //         $worstPip = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->min('pips');
+    //         //get best pip
+    //         $bestPip = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->max('pips');
+    //         $totalClosedSignals = $monthSignals->count();
+    //         $profabilityWin = 0;
+    //         $profabilityLoss = 0;
+    //         $pips = 0;
+    //         $dailyStatistics = [];
+
+
+    //         // for line graph, if get data of each of given month
+    //         $firstDayOfMonth = Carbon::now()->firstOfMonth()->format('Y-m-d');
+    //         $currentDayOfMonth = Carbon::now()->format('Y-m-d');
+    //         $currentDate = Carbon::parse($firstDayOfMonth);
+
+    //         while ($currentDate <= Carbon::parse($currentDayOfMonth)) {
+    //             // Get signals for the current day
+    //             $dailySignals = PostSignal::where('closed', '=', 'yes')
+    //                 ->whereDate('created_at', $currentDate->format('Y-m-d'))
+    //                 ->get();
+
+    //             // Calculate total profit and total loss for the current day
+    //             // Count the number of signals that resulted in profit and loss for the current day
+    //             $totalProfitSignals = $dailySignals->filter(function ($signal) {
+    //                 return (float) $signal->close_price <= (float) $signal->close_price_status;
+    //             })->count();
+
+    //             $totalLossSignals = $dailySignals->filter(function ($signal) {
+    //                 return (float) $signal->close_price > (float) $signal->close_price_status;
+    //             })->count();
+    //             $sumPips = $dailySignals->sum('pips');
+
+    //             // Add daily statistics to the array
+    //             $dailyStatistics[] = [
+    //                 'totalProfit' => $totalProfitSignals,
+    //                 'totalLoss' => $totalLossSignals,
+    //                 'pipsEarned' => $sumPips,
+    //                 'day' => $currentDate->format('Y-m-d'),
+    //             ];
+
+    //             // Move to the next day
+    //             $currentDate->addDay();
+    //         }
+
+    //         // for getting precentage of all currencies according to all totalCurrency on month base
+    //         $currencyPairCounts = $monthSignals->groupBy('currency')->map->count();
+
+    //         // Calculate percentage for each currency pair
+    //         $currencyPairPercentages = $currencyPairCounts->map(function ($count) use ($totalClosedSignals) {
+    //             return number_format(($count / $totalClosedSignals) * 100, 2);
+    //         });
+
+    //         // Transform the currency pair percentages array
+    //         $transformedCurrencyPairPercentages = $currencyPairPercentages->map(function ($percentage, $currency) {
+    //             return [
+    //                 'currency' => $currency,
+    //                 'percentage' => $percentage,
+    //             ];
+    //         })->values()->toArray();
+
+
+
+    //         foreach ($monthSignals as $monthSignal) {
+    //             //for getting sum of all pips
+    //             $pips += $monthSignal->pips;
+    //             //for getting profiability of all signals
+    //             if ($monthSignal->close_price <= $monthSignal->close_price_status) {
+    //                 $profabilityWin += 1;
+    //             } else {
+    //                 $profabilityLoss += 1;
+    //             }
+    //         }
+    //         //for getting average  of all pips
+    //         $averagePips =   $pips / 10;
+    //         // for getting long wins or short wins, 
+    //         $buySignals = $monthSignals->where('action', 'buy');
+    //         $sellSignals = $monthSignals->where('action', 'sell');
+    //         $longwins = 0;
+    //         $shortwins = 0;
+    //         $totalBuySignals =  $buySignals->count();
+    //         $totalSellSignals =  $sellSignals->count();
+
+    //         foreach ($buySignals as  $buySignal) {
+    //             if ($buySignal->close_price <= $buySignal->close_price_status) {
+    //                 $longwins +=  1;
+    //             }
+    //         }
+    //         foreach ($sellSignals as  $sellSignal) {
+    //             if ($sellSignal->close_price >= $sellSignal->close_price_status) {
+    //                 $shortwins +=  1;
+    //             }
+    //         }
+
+
+
+    //         // all closed signals listing
+    //         $postSignal = PostSignal::where('closed', '=', 'yes');
+
+    //         if ($search) {
+    //             $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
+    //         }
+
+    //         $postSignal = $this->filter($request, $postSignal);
+
+    //         $count = $postSignal->count();
+    //         $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+
+    //         $collection = PostSignalResource::collection($data);
+
+    //         $response = [
+    //             'dailyStatistics' => $dailyStatistics,
+    //             'currencyPairPercentages' => $transformedCurrencyPairPercentages,
+    //             'totalClosedSignals' => $totalClosedSignals,
+    //             'profabilityLoss' => $profabilityLoss,
+    //             'profabilityWin' => $profabilityWin,
+    //             'pips' => $pips,
+    //             'averagePips' => $averagePips,
+    //             'longwon' => $longwins,
+    //             'shortwon' => $shortwins,
+    //             'totalLongWins' => $totalBuySignals,
+    //             'totalShortWins' => $totalSellSignals,
+    //             'bestPip' => $bestPip,
+    //             'worstPip' => $worstPip,
+    //             'totalCount' => $count,
+    //             'post_signals' => $collection,
+    //         ];
+    //         return sendResponse(200, 'Data fetching successfully!', $response);
+    //     } catch (\Throwable $th) {
+    //         $response = sendResponse(500, $th->getMessage(), (object)[]);
+    //         return $response;
+    //     }
+    // }
+
     public function history(Request $request)
     {
         try {
             $page = $request->query('page', 1);
             $limit = $request->query('limit', 10);
             $search = $request->query('search', null);
-            $search = $request->query('search', null);
             $currentMonth = Carbon::now()->format('m');
             $month = $request->query('month', $currentMonth);
 
-            //signals on base of month
-            $monthSignals = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->get();
-            //get worst pip
-            $worstPip = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->min('pips');
-            //get best pip
-            $bestPip = PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->max('pips');
-            $totalClosedSignals = $monthSignals->count();
-            $profabilityWin = 0;
-            $profabilityLoss = 0;
-            $pips = 0;
+            $monthSignals = $this->getMonthSignals($month);
+            $worstPip = $this->getWorstPip($monthSignals);
+            $bestPip = $this->getBestPip($monthSignals);
+            list($totalClosedSignals, $profabilityWin, $profabilityLoss, $pips) = $this->calculateTotals($monthSignals);
 
-            foreach ($monthSignals as $monthSignal) {
-                //for getting sum of all pips
-                $pips += $monthSignal->pips;
-                //for getting profiability of all signals
-                if ($monthSignal->close_price <= $monthSignal->close_price_status) {
-                    $profabilityWin += 1;
-                } else {
-                    $profabilityLoss += 1;
-                }
-            }
-            //for getting average  of all pips
-            $averagePips =   $pips / 10;
-            // for getting long wins or short wins, 
-            $buySignals =     $monthSignals->where('action', 'buy');
-            $sellSignals =     $monthSignals->where('action', 'sell');
-            $longwins = 0;
-            $shortwins = 0;
-            $totalBuySignals =  $buySignals->count();
-            $totalSellSignals =  $sellSignals->count();
+            $dailyStatistics = $this->getDailyStatistics($monthSignals);
+            $transformedCurrencyPairPercentages = $this->getCurrencyPairPercentages($monthSignals, $totalClosedSignals);
+            list($averagePips, $longwins, $shortwins, $totalBuySignals, $totalSellSignals) = $this->getOtherStatistics($monthSignals, $totalClosedSignals);
 
-            foreach ($buySignals as  $buySignal) {
-                if ($buySignal->close_price <= $buySignal->close_price_status) {
-                    $longwins +=  1;
-                }
-            }
-            foreach ($sellSignals as  $sellSignal) {
-                if ($sellSignal->close_price >= $sellSignal->close_price_status) {
-                    $shortwins +=  1;
-                }
-            }
-
-
-
-            // all closed signals listing
-            $postSignal = PostSignal::where('closed', '=', 'yes');
-
-            if ($search) {
-                $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
-            }
-
-            $postSignal = $this->filter($request, $postSignal);
-
-            $count = $postSignal->count();
-            $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
-
-            $collection = PostSignalResource::collection($data);
+            $collection = $this->getAllClosedSignals($request, $limit, $page, $search);
 
             $response = [
+                'dailyStatistics' => $dailyStatistics,
+                'currencyPairPercentages' => $transformedCurrencyPairPercentages,
                 'totalClosedSignals' => $totalClosedSignals,
                 'profabilityLoss' => $profabilityLoss,
                 'profabilityWin' => $profabilityWin,
@@ -164,9 +263,10 @@ class PostSignalController extends Controller
                 'totalShortWins' => $totalSellSignals,
                 'bestPip' => $bestPip,
                 'worstPip' => $worstPip,
-                'totalCount' => $count,
+                'totalCount' => $collection->total(),
                 'post_signals' => $collection,
             ];
+
             return sendResponse(200, 'Data fetching successfully!', $response);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);
@@ -174,7 +274,109 @@ class PostSignalController extends Controller
         }
     }
 
+    private function getMonthSignals($month)
+    {
+        return PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->get();
+    }
 
+    private function getWorstPip($signals)
+    {
+        return $signals->min('pips');
+    }
+
+    private function getBestPip($signals)
+    {
+        return $signals->max('pips');
+    }
+
+    private function calculateTotals($signals)
+    {
+        $totalClosedSignals = $signals->count();
+        $profabilityWin = $signals->where('close_price', '<=', 'close_price_status')->count();
+        $profabilityLoss = $signals->where('close_price', '>', 'close_price_status')->count();
+        $pips = $signals->sum('pips');
+
+        return [$totalClosedSignals, $profabilityWin, $profabilityLoss, $pips];
+    }
+
+    private function getDailyStatistics($signals)
+    {
+        $dailyStatistics = [];
+        $firstDayOfMonth = Carbon::now()->firstOfMonth()->format('Y-m-d');
+        $currentDayOfMonth = Carbon::now()->format('Y-m-d');
+        $currentDate = Carbon::parse($firstDayOfMonth);
+
+        while ($currentDate <= Carbon::parse($currentDayOfMonth)) {
+            $dailySignals = PostSignal::where('closed', '=', 'yes')
+                ->whereDate('created_at', $currentDate->format('Y-m-d'))
+                ->get();
+
+            $totalProfitSignals = $dailySignals->filter(fn ($signal) => (float) $signal->close_price <= (float) $signal->close_price_status)->count();
+            $totalLossSignals = $dailySignals->filter(fn ($signal) => (float) $signal->close_price > (float) $signal->close_price_status)->count();
+            $sumPips = $dailySignals->sum('pips');
+
+            $dailyStatistics[] = [
+                'totalProfit' => $totalProfitSignals,
+                'totalLoss' => $totalLossSignals,
+                'pipsEarned' => $sumPips,
+                'day' => $currentDate->format('Y-m-d'),
+            ];
+
+            $currentDate->addDay();
+        }
+
+        return $dailyStatistics;
+    }
+
+    private function getCurrencyPairPercentages($signals, $totalClosedSignals)
+    {
+        $currencyPairCounts = $signals->groupBy('currency')->map->count();
+
+        return $currencyPairCounts->map(function ($count) use ($totalClosedSignals) {
+            return number_format(($count / $totalClosedSignals) * 100, 2);
+        })->map(function ($percentage, $currency) {
+            return [
+                'currency' => $currency,
+                'percentage' => $percentage,
+            ];
+        })->values()->toArray();
+    }
+
+    private function getOtherStatistics($signals, $totalClosedSignals)
+    {
+        $pips = $longwins = $shortwins = 0;
+        $buySignals = $signals->where('action', 'buy');
+        $sellSignals = $signals->where('action', 'sell');
+        $totalBuySignals = $buySignals->count();
+        $totalSellSignals = $sellSignals->count();
+
+        foreach ($signals as $signal) {
+            $pips += $signal->pips;
+
+            if ($signal->action == 'buy' && $signal->close_price <= $signal->close_price_status) {
+                $longwins++;
+            } elseif ($signal->action == 'sell' && $signal->close_price >= $signal->close_price_status) {
+                $shortwins++;
+            }
+        }
+
+        $averagePips = $totalClosedSignals > 0 ? $pips / $totalClosedSignals : 0;
+
+        return [$averagePips, $longwins, $shortwins, $totalBuySignals, $totalSellSignals];
+    }
+
+    private function getAllClosedSignals($request, $limit, $page, $search)
+    {
+        $postSignal = PostSignal::where('closed', '=', 'yes');
+
+        if ($search) {
+            $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
+        }
+
+        $postSignal = $this->filter($request, $postSignal);
+
+        return $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+    }
 
     /**
      * Show the form for creating a new resource.
