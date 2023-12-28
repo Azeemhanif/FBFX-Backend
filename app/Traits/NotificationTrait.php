@@ -13,8 +13,8 @@ trait NotificationTrait
     public function sendToAllUsers($input, $ids)
     {
         $users = $ids;
-        $data["message"] = $input['content'];
 
+        $data["message"] = $input['content'];
         $checkResponse = Device::sendPush($data, $users, "");
     }
 

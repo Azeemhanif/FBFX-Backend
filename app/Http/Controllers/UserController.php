@@ -677,7 +677,7 @@ class UserController extends Controller
             $page = $request->query('page', 1);
             $limit = $request->query('limit', 10);
 
-            $notification = Notification::where('deliver_from', '!=', Auth::user()->id);
+            $notification = Notification::query();
 
             $count = $notification->count();
             $data = $notification->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
