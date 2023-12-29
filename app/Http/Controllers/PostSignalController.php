@@ -375,7 +375,10 @@ class PostSignalController extends Controller
 
         $postSignal = $this->filter($request, $postSignal);
 
-        return $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+
+        $postSignal =  $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+        $response = PostSignalResource::collection($postSignal);
+        return $response;
     }
 
     /**

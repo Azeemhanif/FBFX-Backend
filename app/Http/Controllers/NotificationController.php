@@ -54,7 +54,7 @@ class NotificationController extends Controller
             $notification->content = $input['content'];
             $notification->type = 'info';
             $notification->save();
-            $userIds = User::where('is_notification', true)->pluck('id');
+            $userIds = User::where('is_notification', true)->where('id', '!=', Auth::user()->id)->pluck('id');
 
             $this->sendToAllUsers($input, $userIds);
             $response = new NotificationResource($notification);

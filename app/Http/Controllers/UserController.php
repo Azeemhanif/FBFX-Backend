@@ -303,6 +303,9 @@ class UserController extends Controller
             $data->role = 'user';
             $data->save();
             $data->loginFrom = $input['provider_type'];
+
+            if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $data);
+
             $collection = new LoginResource($data);
             $collection->token = $data->createToken('API token of ' . $data->first_name)->plainTextToken;
             return sendResponse(200, 'Registration Successful!', $collection);
