@@ -27,8 +27,13 @@ class PostSignalController extends Controller
             $page = $request->query('page', 1);
             $limit = $request->query('limit', 10);
             $search = $request->query('search', null);
-
             $postSignal = PostSignal::where('closed', '=', 'no');
+
+            if (Auth::user()->is_premium == 0) {
+                $postSignal->orderBy('id', 'DESC')->take(5);
+            } else {
+                $postSignal->orderBy('id', 'DESC')->take(15);
+            }
 
             if ($search) {
                 $postSignal->where('currency', 'LIKE', '%' . $search . '%');
@@ -36,8 +41,11 @@ class PostSignalController extends Controller
 
             $postSignal = $this->filter($request, $postSignal);
 
-            $count = $postSignal->count();
-            $data = $postSignal->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+            $data = $postSignal->get();
+
+            $count = $data->count();
+            // Execute the query immediately after applying take
+            $data = $data->slice(($page - 1) * $limit, $limit)->all();
 
             $collection = PostSignalResource::collection($data);
             $response = [
@@ -50,6 +58,7 @@ class PostSignalController extends Controller
             return $response;
         }
     }
+
 
 
 

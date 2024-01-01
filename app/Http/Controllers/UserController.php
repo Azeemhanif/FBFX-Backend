@@ -24,6 +24,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Client;
 use Symfony\Component\DomCrawler\Crawler;
+use Google_Client;
+use Google_Service_AndroidPublisher;
+use Google_Service_Exception;
 
 class UserController extends Controller
 {
@@ -247,6 +250,7 @@ class UserController extends Controller
             }
             $string = substr($request->token, 0, 1000);
             $userExistWithEmail = null;
+            $role = 'user';
             // if ($request->provider_type == 'google') {
             //     $user = User::where(['google_token' => $string])->onlyTrashed()->first();
             // }
@@ -284,10 +288,13 @@ class UserController extends Controller
             if (!empty($request->email)) {
                 $data = User::where(['email' => $request->email])->first();
             }
-
+            if ($data) {
+                $role = $data->role;
+            }
             if (!$data) {
                 $data = User::create($input);
             }
+
             if ($request->provider_type == 'google') {
                 $data->google_token = $string;
             }
@@ -300,13 +307,14 @@ class UserController extends Controller
                 $data->apple_token = $string;
             }
             $data->social_token = $string;
-            $data->role = 'user';
+            $data->role = $role;
             $data->save();
             $data->loginFrom = $input['provider_type'];
 
             if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $data);
 
             $collection = new LoginResource($data);
+            $data->tokens()->delete();
             $collection->token = $data->createToken('API token of ' . $data->first_name)->plainTextToken;
             return sendResponse(200, 'Registration Successful!', $collection);
             // }
@@ -627,8 +635,6 @@ class UserController extends Controller
     }
 
 
-
-
     public function riskCalculator(Request $request)
     {
         try {
@@ -741,6 +747,116 @@ class UserController extends Controller
         }
     }
 
+
+
+
+    public function validateReceipt(Request $request, $type)
+    {
+        try {
+            if ($type === "ios") {
+                return $this->validateReceiptApple($request);
+            } else {
+                return $this->validateReceiptAndroid($request);
+            }
+            // return sendResponse(422, 'No device exists against this user!', $device);
+        } catch (\Exception $ex) {
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+    public function validateReceiptAndroid(Request $request)
+    {
+        try {
+            $validatorResult = $this->checkValidations(FBFXValidations::validateReceiptAndroid($request));
+            if ($validatorResult) return $validatorResult;
+
+            $client = new Google_Client();
+            $client->setAuthConfig(storage_path('app/google-credentials.json'));
+            $client->setScopes([
+                'https://www.googleapis.com/auth/androidpublisher'
+            ]);
+
+            $androidPublisher = new Google_Service_AndroidPublisher($client);
+            $packageName = $request->input('package_name');
+            $productId = $request->input('product_id');
+            $purchaseToken = $request->input('token');
+            // dd($androidPublisher);
+            $response = $androidPublisher->purchases_subscriptions->get($packageName, $productId, $purchaseToken);
+            return sendResponse(200, 'Detail fecthed sucessfully!', $response);
+        } catch (\Exception $ex) {
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+
+    public function validateReceiptApple(Request $request)
+    {
+        try {
+            // Validate the incoming request
+            $validatorResult = $this->checkValidations(FBFXValidations::validateReceipt($request));
+            if ($validatorResult) return $validatorResult;
+
+            if ($request->input('is_testing') === true) {
+                $appStoreUrl = 'https://sandbox.itunes.apple.com/verifyReceipt';
+            } else {
+                $appStoreUrl = 'https://buy.itunes.apple.com/verifyReceipt';
+            }
+
+            // Extract receipt data from the request
+            $receiptData = $request->input('receipt');
+
+            // Your Apple App Store credentials
+            $appStoreSecret = '5ee79ce7d0b349cdb4ecff0d91e9b45b';
+
+            // Make a request to Apple's App Store Receipt Validation API
+            $response = Http::post($appStoreUrl, ['receipt-data' => $receiptData, 'password' => $appStoreSecret]);
+            // Check the response from Apple
+            $statusCode = $response->status();
+            $responseData = $response->json();
+
+            if ($statusCode === 200 && $responseData['status'] === 0) {
+                return sendResponse(200, 'Detail fecthed sucessfully!', $responseData);
+            } else {
+                if ($responseData['status'] === 21000) {
+                    $errorMessage = 'The app store could not read the JSON object you provided.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } elseif ($responseData['status'] === 21002) {
+
+                    $errorMessage = 'The data in the receipt-data property was malformed or missing.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } elseif ($responseData['status'] === 21003) {
+
+                    $errorMessage = 'The receipt could not be authenticated.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } elseif ($responseData['status'] === 21004) {
+
+                    $errorMessage = 'The secret key does not matched the secret key on file for your account.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } elseif ($responseData['status'] === 21005) {
+
+                    $errorMessage = 'The receipt server is not currently available.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } elseif ($responseData['status'] === 21006) {
+
+                    $errorMessage = 'The receipt is valid but subscription has expired.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } elseif ($responseData['status'] === 21007) {
+
+                    $errorMessage = 'This receipt is from the test environment, but it was sent to the production environment for verification.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                } else {
+
+                    $errorMessage = 'This receipt is from the production environment, but it was sent to the test environment for verification.';
+                    return sendResponse(202, 'Receipt validation failed: ', $errorMessage);
+                }
+            }
+        } catch (\Exception $ex) {
+            $response = sendResponse(500, $ex->getMessage(), (object)[]);
+            return $response;
+        }
+    }
     public function logout(Request $request)
     {
         try {

@@ -420,4 +420,60 @@ class FBFXValidations
             return $validator;
         }
     }
+
+
+
+    public static function validateReceipt($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'receipt' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+
+
+    public static function validatePurchasePackage($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'user_id' => 'required',
+                'package_id' => 'required',
+                'subscription_type' => 'required',
+                // 'receipt' => 'required',
+                'purchase_token' => 'required',
+                'transaction_id' => 'required',
+                'amount' => 'required',
+                'start_date' => 'required',
+                'end_date' => 'required'
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+    public static function validateReceiptAndroid($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'package_name' => 'required',
+                'product_id' => 'required',
+                'token' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
 }

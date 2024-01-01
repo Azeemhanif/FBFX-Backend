@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademyController;
 use App\Http\Controllers\AffiliateLinkController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
@@ -44,6 +45,7 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('risk/calculator', 'riskCalculator')->middleware("auth:sanctum");
     Route::get("notifications/listing", "notificationListing")->middleware("auth:sanctum");
     Route::delete('account', 'deleteAccount')->middleware("auth:sanctum");
+    Route::post('validateReceipt/{type}', 'validateReceipt')->middleware("auth:sanctum");
 });
 
 Route::middleware('auth:sanctum')->prefix('user/')->group(
@@ -72,6 +74,11 @@ Route::middleware('auth:sanctum')->prefix('user/')->group(
         Route::controller(AcademyController::class)->prefix('academy/')->group(
             function () {
                 Route::get("listing", "show");
+            }
+        );
+        Route::controller(SubscriptionController::class)->prefix('purchase/')->middleware('auth:sanctum')->group(
+            function () {
+                Route::post("package", "purchasePackage");
             }
         );
     }

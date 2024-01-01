@@ -33,6 +33,8 @@ class UserResource extends JsonResource
             'plan' => $this->plan == null ? "" : $this->plan,
             'is_otp_verified' => $this->is_otp_verified == 1 ? "Y" : "N",
             'is_notification' => $this->is_notification == 1 ? "Y" : "N",
+            'is_premium' => $this->is_premium == 1 ? "Y" : "N",
+            'package_id' => $this->package_id == null ? "" : $this->package_id,
 
         ];
 

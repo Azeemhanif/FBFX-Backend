@@ -46,6 +46,8 @@ function sendResponse($code, $message, $data)
         'message' => $message,
         'data' => $data,
     ];
+
+    \Log::info("$message: " . json_encode($data));
     return  response()->json($response);
 }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Storage;
 
 class Device extends Model
@@ -15,15 +16,13 @@ class Device extends Model
     {
         ini_set('memory_limit', '-1');
         set_time_limit(36000);
-        if (!empty($send_to)) {
-            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
-            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
+        if (empty($send_to)) {
+            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
         } else {
-
-            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
-            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
+            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->where('user_id', '!=', Auth::user()->id)->pluck('device_push_token')->toArray();
         }
-
 
         if (!empty($ios_devices)) {
 
