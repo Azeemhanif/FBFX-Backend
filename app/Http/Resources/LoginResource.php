@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,7 +15,12 @@ class LoginResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-
+        $subscriptionAddedByAdmin = false;
+        $subscription = Subscription::where('user_id', $this->id)->first();
+        if ($subscription) {
+            if ($subscription->add_by_admin == 1)
+                $subscriptionAddedByAdmin = true;
+        }
         $data = [
             'id' => $this->id == null ? "" : $this->id,
             'first_name' => $this->first_name == null ? "" : $this->first_name,
@@ -35,6 +41,7 @@ class LoginResource extends JsonResource
             'is_notification' => $this->is_notification == 1 ? "Y" : "N",
             'is_premium' => $this->is_premium == 1 ? "Y" : "N",
             'package_id' => $this->package_id == null ? "" : $this->package_id,
+            'subscriptionAddedByAdmin' => $subscriptionAddedByAdmin,
             'token' => $this->token == null ? "" : $this->token,
         ];
 

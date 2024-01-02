@@ -30,7 +30,7 @@ class PostSignalController extends Controller
             $postSignal = PostSignal::where('closed', '=', 'no');
 
             if (Auth::user()->is_premium == 0) {
-                $postSignal->orderBy('id', 'DESC')->take(5);
+                $postSignal->orderBy('id', 'DESC')->where('type', '!=', 'premium')->whereIn('currency', ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY',  'CrudeOil',  'US30', 'SP500', 'DXY'])->take(5);
             } else {
                 $postSignal->orderBy('id', 'DESC')->take(15);
             }
@@ -58,9 +58,6 @@ class PostSignalController extends Controller
             return $response;
         }
     }
-
-
-
 
 
     public function getFavourite(Request $request)
@@ -245,18 +242,19 @@ class PostSignalController extends Controller
             $limit = $request->query('limit', 10);
             $search = $request->query('search', null);
             $currentMonth = Carbon::now()->format('m');
+            $currentYear = Carbon::now()->format('y');
             $month = $request->query('month', $currentMonth);
-
-            $monthSignals = $this->getMonthSignals($month);
+            $year = $request->query('year', $currentYear);
+            $monthSignals = $this->getMonthSignals($month, $year);
             $worstPip = $this->getWorstPip($monthSignals);
             $bestPip = $this->getBestPip($monthSignals);
-            list($totalClosedSignals, $profabilityWin, $profabilityLoss, $pips) = $this->calculateTotals($monthSignals);
 
-            $dailyStatistics = $this->getDailyStatistics($monthSignals);
+            list($totalClosedSignals, $profabilityWin, $profabilityLoss, $pips) = $this->calculateTotals($monthSignals);
+            $dailyStatistics = $this->getDailyStatistics($month, $year, $monthSignals);
             $transformedCurrencyPairPercentages = $this->getCurrencyPairPercentages($monthSignals, $totalClosedSignals);
             list($averagePips, $longwins, $shortwins, $totalBuySignals, $totalSellSignals) = $this->getOtherStatistics($monthSignals, $totalClosedSignals);
 
-            $collection = $this->getAllClosedSignals($request, $limit, $page, $search);
+            $collection = $this->getAllClosedSignals($request, $limit, $page, $search, $month, $year);
 
             $response = [
                 'dailyStatistics' => $dailyStatistics,
@@ -283,9 +281,9 @@ class PostSignalController extends Controller
         }
     }
 
-    private function getMonthSignals($month)
+    private function getMonthSignals($month, $year)
     {
-        return PostSignal::where('closed', '=', 'yes')->whereMonth('created_at', $month)->get();
+        return PostSignal::where('closed', '=', 'yes')->whereYear('created_at', $year)->whereMonth('created_at', $month)->get();
     }
 
     private function getWorstPip($signals)
@@ -301,21 +299,28 @@ class PostSignalController extends Controller
     private function calculateTotals($signals)
     {
         $totalClosedSignals = $signals->count();
+
         $profabilityWin = $signals->where('close_price', '<=', 'close_price_status')->count();
+
         $profabilityLoss = $signals->where('close_price', '>', 'close_price_status')->count();
+
         $pips = $signals->sum('pips');
 
         return [$totalClosedSignals, $profabilityWin, $profabilityLoss, $pips];
     }
 
-    private function getDailyStatistics($signals)
+    private function getDailyStatistics($month, $year, $signals)
     {
         $dailyStatistics = [];
-        $firstDayOfMonth = Carbon::now()->firstOfMonth()->format('Y-m-d');
-        $currentDayOfMonth = Carbon::now()->format('Y-m-d');
+        // $firstDayOfMonth = Carbon::now()->firstOfMonth()->format('Y-m-d');
+        // $currentDayOfMonth = Carbon::now()->format('Y-m-d');
+
+        $firstDayOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        // Get the last day of the month
+        $lastDayOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
         $currentDate = Carbon::parse($firstDayOfMonth);
 
-        while ($currentDate <= Carbon::parse($currentDayOfMonth)) {
+        while ($currentDate <= Carbon::parse($lastDayOfMonth)) {
             $dailySignals = PostSignal::where('closed', '=', 'yes')
                 ->whereDate('created_at', $currentDate->format('Y-m-d'))
                 ->get();
@@ -351,6 +356,7 @@ class PostSignalController extends Controller
         })->values()->toArray();
     }
 
+
     private function getOtherStatistics($signals, $totalClosedSignals)
     {
         $pips = $longwins = $shortwins = 0;
@@ -374,9 +380,10 @@ class PostSignalController extends Controller
         return [$averagePips, $longwins, $shortwins, $totalBuySignals, $totalSellSignals];
     }
 
-    private function getAllClosedSignals($request, $limit, $page, $search)
+    private function getAllClosedSignals($request, $limit, $page, $search, $month, $year)
     {
-        $postSignal = PostSignal::where('closed', '=', 'yes');
+        // $postSignal = PostSignal::where('closed', '=', 'yes');
+        $postSignal = PostSignal::where('closed', '=', 'yes')->whereYear('created_at', $year)->whereMonth('created_at', $month);
 
         if ($search) {
             $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
@@ -544,7 +551,12 @@ class PostSignalController extends Controller
             }
 
             // Calculate total pips earned and total pips lost from all PostSignals
-            $postSignals = PostSignal::where('closed', 'yes')->orderByDesc('id')->get();
+
+            if ($signalDetail->closed == 'yes') {
+                $postSignals = PostSignal::where('closed', 'yes')->orderByDesc('id')->get();
+            } else {
+                $postSignals = PostSignal::where('closed', 'no')->orderByDesc('id')->get();
+            }
             $totalPipsEarned = 0;
             $totalPipsLost = 0;
 
@@ -570,7 +582,11 @@ class PostSignalController extends Controller
                 }
             }
 
-            $totalSignals = PostSignal::where(['closed' => 'no'])->count();
+            if ($signalDetail->closed == 'yes') {
+                $totalSignals = PostSignal::where(['closed' => 'yes'])->count();
+            } else {
+                $totalSignals = PostSignal::where(['closed' => 'no'])->count();
+            }
             $collection = new PostSignalResource($signalDetail);
             $data = [
                 'totalSignals' => $totalSignals,

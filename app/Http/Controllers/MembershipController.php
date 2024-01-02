@@ -9,6 +9,8 @@ use App\Http\Resources\UserResource;
 use App\Models\IbBroker;
 use App\Models\Membership;
 use App\Models\PremiumMember;
+use App\Models\Subscription;
+use App\Models\SubscriptionHistory;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Validations\FBFXValidations;
@@ -153,20 +155,41 @@ class MembershipController extends Controller
             $input = $request->all();
             $user = User::where('email', $input['email'])->first();
             if (!$user)
-                return sendResponse(422, 'User does not registered!', (object)[]);
+                return sendResponse(422, 'User does not exists!', (object)[]);
+            $user->is_premium = true;
+            $user->save();
 
-            $premiumMember = PremiumMember::where('email', $input['email'])->first();
-            if ($premiumMember)
-                return sendResponse(422, 'Email already have membership!', (object)[]);
+            $subscription = Subscription::where('user_id', $user->id)->first();
+            $subscriptionhistory = SubscriptionHistory::where('user_id', $user->id)->first();
+            if (!$subscription) {
+                $subscription = new Subscription();
+            }
 
-            $premiumMember = new PremiumMember();
-            $premiumMember->membership_type = $input['membership_type'];
-            $premiumMember->email = $input['email'];
-            $premiumMember->user_id = $user->id;
-            $premiumMember->status = 'approved';
-            $premiumMember->type = 'premium';
-            $premiumMember->save();
-            $response = new PremiumMemberResource($premiumMember);
+            if (!$subscriptionhistory) {
+                $subscriptionhistory = new SubscriptionHistory();
+            }
+            $subscription->add_by_admin = true;
+            $subscription->user_id = $user->id;
+            $subscription->subscription_type = $input['membership_type'];
+            $subscription->save();
+
+
+            $subscriptionhistory->add_by_admin = true;
+            $subscriptionhistory->user_id = $user->id;
+            $subscriptionhistory->subscription_type = $input['membership_type'];
+            $subscriptionhistory->save();
+            // $premiumMember = PremiumMember::where('email', $input['email'])->first();
+            // if ($premiumMember)
+            //     return sendResponse(422, 'Email already have membership!', (object)[]);
+
+            // $premiumMember = new PremiumMember();
+            // $premiumMember->membership_type = $input['membership_type'];
+            // $premiumMember->email = $input['email'];
+            // $premiumMember->user_id = $user->id;
+            // $premiumMember->status = 'approved';
+            // $premiumMember->type = 'premium';
+            // $premiumMember->save();
+            $response = new UserResource($user);
             return sendResponse(200, 'Premium member created successfully!', $response);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);
@@ -184,12 +207,12 @@ class MembershipController extends Controller
             $limit = $request->query('limit', 10);
             $type = $request->query('type', 'all');
 
-            $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
+            // $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
             if ($type == 'premium') {
-                $users  = User::whereIn('id', $premiumMemberIds);
+                $users  = User::where('is_premium', true);
             }
             if ($type == 'free') {
-                $users  = User::where('role', 'user')->whereNotIn('id', $premiumMemberIds);
+                $users  = User::where('is_premium', false);
             }
             if ($type == 'all') {
                 $users = User::where('role', 'user');

@@ -781,7 +781,7 @@ class UserController extends Controller
             $packageName = $request->input('package_name');
             $productId = $request->input('product_id');
             $purchaseToken = $request->input('token');
-            // dd($androidPublisher);
+            // dd($packageName, '----', $productId, '----', $purchaseToken);
             $response = $androidPublisher->purchases_subscriptions->get($packageName, $productId, $purchaseToken);
             return sendResponse(200, 'Detail fecthed sucessfully!', $response);
         } catch (\Exception $ex) {

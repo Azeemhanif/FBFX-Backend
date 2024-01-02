@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('customer_token')->nullable();
             $table->string('in_app_id')->nullable();
             $table->boolean('auto_renew')->default(0);
-            $table->float('amount');
+            $table->float('amount')->nullable();
             $table->dateTime('start_date', $precision = 0)->useCurrent();
             $table->dateTime('end_date', $precision = 0)->nullable();
             $table->timestamps();
