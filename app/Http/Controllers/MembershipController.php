@@ -209,10 +209,10 @@ class MembershipController extends Controller
 
             // $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
             if ($type == 'premium') {
-                $users  = User::where('is_premium', true);
+                $users  = User::where(['is_premium' => true, 'role' => 'user']);
             }
             if ($type == 'free') {
-                $users  = User::where('is_premium', false);
+                $users  = User::where(['is_premium' => false, 'role' => 'user']);
             }
             if ($type == 'all') {
                 $users = User::where('role', 'user');

@@ -14,6 +14,7 @@ use App\Models\Device;
 use App\Models\Feedback;
 use App\Models\Notification;
 use App\Models\PostSignal;
+use App\Models\Subscription;
 use Illuminate\Support\Facades\Hash;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
@@ -27,6 +28,7 @@ use Symfony\Component\DomCrawler\Crawler;
 use Google_Client;
 use Google_Service_AndroidPublisher;
 use Google_Service_Exception;
+use NunoMaduro\Collision\Adapters\Phpunit\Subscribers\Subscriber;
 
 class UserController extends Controller
 {
@@ -142,7 +144,7 @@ class UserController extends Controller
             if ($device) {
                 $oldDevice = Device::where(['user_id' => $user->id])->first();
                 if ($oldDevice) {
-                    Device::sendPushToLogout($oldDevice->user_id); // Push to logout user from other devices
+                    // Device::sendPushToLogout($oldDevice->user_id); // Push to logout user from other devices
 
                     $oldDevice->user_id = null;
                     $oldDevice->device_uuid = null;
@@ -153,7 +155,7 @@ class UserController extends Controller
             } else {
                 $oldDevice = Device::where(['user_id' => $user->id])->first();
                 if ($oldDevice) {
-                    Device::sendPushToLogout($oldDevice->user_id); // Push to logout user from other devices
+                    // Device::sendPushToLogout($oldDevice->user_id); // Push to logout user from other devices
 
                     $oldDevice->user_id = null;
                     $oldDevice->device_uuid = null;
@@ -739,7 +741,8 @@ class UserController extends Controller
     public function tokenListing()
     {
         try {
-            $device = Device::where('device_push_token', '!=',  null)->pluck('device_push_token');
+            $userID = User::where('is_premium', true)->orWhere('role', 'admin')->pluck('id');
+            $device = Device::where('device_push_token', '!=',  null)->whereIn('user_id', $userID)->pluck('device_push_token');
             return sendResponse(200, 'Data fetching successfully!', $device);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);
@@ -747,6 +750,23 @@ class UserController extends Controller
         }
     }
 
+
+    public function cancelSubscription()
+    {
+        try {
+            $userId = Auth::user()->id;
+            $user = User::where('id', $userId)->first();
+            $user->is_premium = false;
+            $user->save();
+            $subscription = Subscription::where('user_id', $user->id)->first();
+            if ($subscription) $subscription->delete();
+            $response = new UserResource($user);
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
 
 
 

@@ -29,10 +29,14 @@ class PostSignalController extends Controller
             $search = $request->query('search', null);
             $postSignal = PostSignal::where('closed', '=', 'no');
 
-            if (Auth::user()->is_premium == 0) {
-                $postSignal->orderBy('id', 'DESC')->where('type', '!=', 'premium')->whereIn('currency', ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY',  'CrudeOil',  'US30', 'SP500', 'DXY'])->take(5);
+            if (Auth::user()->role == 'admin') {
+                $postSignal->orderBy('id', 'DESC');
             } else {
-                $postSignal->orderBy('id', 'DESC')->take(15);
+                if (Auth::user()->is_premium == 0) {
+                    $postSignal->orderBy('id', 'DESC')->where('type', '!=', 'premium')->whereIn('currency', ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY',  'CrudeOil',  'US30', 'SP500', 'DXY'])->take(5);
+                } else {
+                    $postSignal->orderBy('id', 'DESC')->take(15);
+                }
             }
 
             if ($search) {
@@ -367,7 +371,6 @@ class PostSignalController extends Controller
 
         foreach ($signals as $signal) {
             $pips += $signal->pips;
-
             if ($signal->action == 'buy' && $signal->close_price <= $signal->close_price_status) {
                 $longwins++;
             } elseif ($signal->action == 'sell' && $signal->close_price >= $signal->close_price_status) {

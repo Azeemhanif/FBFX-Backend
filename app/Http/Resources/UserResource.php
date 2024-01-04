@@ -34,6 +34,7 @@ class UserResource extends JsonResource
             'experience' => $this->experience == null ? "" : $this->experience,
             'age' => $this->age == null ? "" : $this->age,
             'gender' => $this->gender == null ? "" : $this->gender,
+            'trader_type' => $this->trader_type == null ? "" : $this->trader_type,
             'google_token' => $this->google_token == null ? "" : $this->google_token,
             'apple_token' => $this->apple_token == null ? "" : $this->apple_token,
             'social_token' => $this->social_token == null ? "" : $this->social_token,

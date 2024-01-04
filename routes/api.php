@@ -46,6 +46,7 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::get("notifications/listing", "notificationListing")->middleware("auth:sanctum");
     Route::delete('account', 'deleteAccount')->middleware("auth:sanctum");
     Route::post('validateReceipt/{type}', 'validateReceipt')->middleware("auth:sanctum");
+    Route::get('cancel/subscription', 'cancelSubscription')->middleware("auth:sanctum");
 });
 
 Route::middleware('auth:sanctum')->prefix('user/')->group(

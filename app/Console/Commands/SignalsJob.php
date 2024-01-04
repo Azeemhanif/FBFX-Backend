@@ -70,9 +70,7 @@ class SignalsJob extends Command
             $signal->close_price_status = $closePrice;
             $signal->closed = 'yes';
 
-            $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy')
-                ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0)
-                : ($signal->openPrice - $signal->close_price_status) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0);
+            $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy') ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0) : ($signal->openPrice - $signal->close_price_status) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0);
 
             $runningPips = round($runningPips, 2);
             $signal->pips = $runningPips;
