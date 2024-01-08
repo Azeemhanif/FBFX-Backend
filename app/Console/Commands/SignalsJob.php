@@ -18,7 +18,6 @@ class SignalsJob extends Command
         $signals = PostSignal::where('closed', 'no')->get();
 
         foreach ($signals as $signal) {
-
             $this->processSignal($signal);
         }
     }
@@ -43,37 +42,64 @@ class SignalsJob extends Command
         if (count($mergedResult) > 0) {
             if (isset($mergedResult[$currency_pair])) {
                 $currencyData = $mergedResult[$currency_pair];
-                $closePrice = $currencyData['price'] ?? 0;
-                $this->updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss);
-                $this->logApiResponse($currency_pair, $currencyData);
-                $this->closeSignalIfTime($signal, $closePrice);
+                $closeLivePrice = $currencyData['price'] ?? 0;
+                $this->updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss);
+                $this->closeSignalIfTime($signal, $closeLivePrice);
             }
         } else {
             $this->logApiError("No Count");
         }
     }
 
-    private function updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss)
+    private function updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss)
     {
+        $pipMultiplier = 10000;
+
+        if ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY' || $signal->currency === 'XAUUSD') {
+            $pipMultiplier = 100;
+        }
+        // if ($signal->currency === 'XAUUSD') {
+        //     $pipMultiplier = 10;
+        // }
+        $isBuy = in_array(strtoupper($signal->action), ['BUY']);
+        $isSell = in_array(strtoupper($signal->action), ['SELL']);
+
+
+
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
-            if ($$target <= $closePrice && !$signal->$statusField) {
+            $targetValue = $$target;
+
+            if (($isSell && $closeLivePrice <= $targetValue   || $isBuy && $closeLivePrice >= $targetValue) && !$signal->$statusField) {
+                if ($isBuy) {
+                    $runningPips = $$target - $signal->open_price;
+                } else {
+                    $runningPips = $signal->open_price - $$target;
+                }
+                $runningPips = $runningPips  * $pipMultiplier;
+                $signal->pips = round($runningPips, 2);
                 $signal->$statusField = true;
             }
         }
 
-        if ($stop_loss <= $closePrice && $signal->stop_loss_status === null) {
-            $signal->stop_loss_status = $closePrice;
-        }
+        if (($isSell && ($signal->tp3_status ||  $closeLivePrice >= $stop_loss)) || ($isBuy && ($signal->tp3_status || $closeLivePrice <= $stop_loss))) {
+            $signal->close_price_status = $closeLivePrice;
+            if (!$signal->tp3_status) {
+                $signal->stop_loss_status = $closeLivePrice;
+                if ($isBuy) {
+                    $runningPips = $stop_loss - $signal->open_price;
+                } else {
+                    $runningPips = $signal->open_price - $stop_loss;
+                }
 
-        if ($signal->tp1_status == true && $signal->tp2_status  == true && $signal->tp3_status  == true) {
-            $signal->close_price_status = $closePrice;
+                $runningPips = $runningPips  * $pipMultiplier;
+                $signal->pips = round($runningPips, 2);
+            }
+
             $signal->closed = 'yes';
-
-            $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy') ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0) : ($signal->openPrice - $signal->close_price_status) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0);
-
-            $runningPips = round($runningPips, 2);
-            $signal->pips = $runningPips;
+            // $runningPips = ($isBuy ? $stop_loss - $signal->open_price : $signal->open_price - $stop_loss) * $pipMultiplier;
+            // $runningPips = $runningPips  * $pipMultiplier;
+            // $signal->pips = round($runningPips, 2);
         }
 
         $signal->save();
@@ -100,23 +126,21 @@ class SignalsJob extends Command
         self::testjobAction($log);
     }
 
-    private function closeSignalIfTime($signal, $closePrice)
+    private function closeSignalIfTime($signal, $closeLivePrice)
     {
         $currentTime = now()->format('H:i');
         if ($currentTime === '15:00') {
+            // $pipMultiplier = ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') ? 100 : 10000;
             $signal->closed = 'yes';
-            $signal->close_price_status = $closePrice;
-
-            $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy')
-                ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0)
-                : ($signal->openPrice - $signal->close_price_status) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0);
-
-            $runningPips = round($runningPips, 2);
-            $signal->pips = $runningPips;
-
+            $signal->close_price_status = $closeLivePrice;
+            // $signal->stop_loss_status = $closeLivePrice;
+            // $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy') ? ($closeLivePrice - $signal->open_price) * $pipMultiplier : ($signal->open_price - $closeLivePrice) * $pipMultiplier;
+            // $runningPips = round($runningPips, 2);
+            // $signal->pips = $runningPips;
             $signal->save();
         }
     }
+
 
     private function scrapeData($url, $allowedClasses)
     {

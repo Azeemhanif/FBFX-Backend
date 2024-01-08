@@ -75,7 +75,7 @@ class PostSignalController extends Controller
             $postSignal = PostSignal::whereIn('id', $favSignalIds)->where('closed', '=', 'no');
 
             if ($search) {
-                $postSignal->where('currency_pair', 'LIKE', '%' . $search . '%');
+                $postSignal->where('currency', 'LIKE', '%' . $search . '%');
             }
 
             $postSignal = $this->filter($request, $postSignal);
@@ -304,9 +304,8 @@ class PostSignalController extends Controller
     {
         $totalClosedSignals = $signals->count();
 
-        $profabilityWin = $signals->where('close_price', '<=', 'close_price_status')->count();
-
-        $profabilityLoss = $signals->where('close_price', '>', 'close_price_status')->count();
+        $profabilityWin = $signals->where('pips', '>', 0)->count();
+        $profabilityLoss = $signals->where('pips', '<', 0)->count();
 
         $pips = $signals->sum('pips');
 
@@ -423,7 +422,6 @@ class PostSignalController extends Controller
 
         // Filter by currency pairs
         // $currencyPairs = array_filter($request->only([env('XADUSD'), env('EURUSD'), env('GBPUSD'), env('USDJPY'), env('USDCAD'), env('USDCHF'), env('AUDUSD'), env('NZDUSD'), env('EURJPY'), env('GBPJPY'), env('XAUUSD'), env('CrudeOil'), env('XAGUSD'), env('BTCUSD'), env('ETHUSD'), env('BNBUSD'), env('ADAUSD'), env('XRPUSD'), env('US30'), env('SP500'), env('DXY')]));
-
         $currencyPairs = array_filter($request->only(['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY', 'XAUUSD', 'CrudeOil', 'XAGUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'US30', 'SP500', 'DXY']));
         if (!empty($currencyPairs)) {
             $postSignal->whereIn('currency', array_keys($currencyPairs));

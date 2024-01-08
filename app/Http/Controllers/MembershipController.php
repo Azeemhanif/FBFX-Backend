@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
 use App\Traits\{NotificationTrait};
+use Google\Service\ServiceControl\Auth;
 
 class MembershipController extends Controller
 {
@@ -156,6 +157,10 @@ class MembershipController extends Controller
             $user = User::where('email', $input['email'])->first();
             if (!$user)
                 return sendResponse(422, 'User does not exists!', (object)[]);
+
+            if ($user->is_premium == true)
+                return sendResponse(422, 'User already have subsciption!', (object)[]);
+
             $user->is_premium = true;
             $user->save();
 
@@ -197,6 +202,21 @@ class MembershipController extends Controller
         }
     }
 
+    public function cancelSubscription($id)
+    {
+        try {
+            $user = User::where('id', $id)->first();
+            $user->is_premium = false;
+            $user->save();
+            $subscription = Subscription::where('user_id', $user->id)->first();
+            if ($subscription) $subscription->delete();
+            $response = new UserResource($user);
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
 
 
 

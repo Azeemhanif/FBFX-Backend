@@ -134,6 +134,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
                 Route::get("listing/user", "listingUsers");
                 Route::post("add/premium/user", "addPremiumUsers");
                 Route::get("listing/premium/user", "listingPremiumUsers");
+                Route::get('cancel/{id}', 'cancelSubscription');
             }
         );
     }

@@ -29,6 +29,7 @@ use Google_Client;
 use Google_Service_AndroidPublisher;
 use Google_Service_Exception;
 use NunoMaduro\Collision\Adapters\Phpunit\Subscribers\Subscriber;
+use Storage;
 
 class UserController extends Controller
 {
@@ -912,89 +913,124 @@ class UserController extends Controller
         $tp3 = $signal->profit_three;
         $stop_loss = $signal->stop_loss;
         $currency_pair = $signal->currency_pair;
-        // Make API request
-        $response = Http::get('https://api.twelvedata.com/time_series', [
-            'symbol' => 'EUR/USD,GBP/USD,USD/JPY,USD/CAD,USD/CHF,AUD/USD',
-            'interval' => '1min',
-            'apikey' => 'acab338c6b924d6ebfa6183fc4a2491e',
-        ]);
+        $allowedClasses = ['EUR-USD', 'GBP-USD', 'USD-JPY', 'USD-CAD', 'USD-CHF', 'AUD-USD', 'NZD-USD', 'EUR-JPY', 'GBP-JPY', 'XAU-USD', 'XAG-USD', 'BTC-USD', 'ETH-USD', 'BNB-USD', 'ADA-USD', 'XRP-USD', 'US-30', 'SP-500', 'DXY'];
+
+        $result = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/forex', $allowedClasses);
+        $result2 = $this->scrapeData('https://fxpricing.com/help/get_currencty_list_ajax/crypto', $allowedClasses);
+
+        // Merge the two sets of data into a single array
+        $mergedResult = array_merge($result, $result2);
 
         // Check if the request was successful
-        if ($response->successful()) {
-            $data = $response->json();
-
-            if (isset($data[$currency_pair])) {
-                $currencyData = $data[$currency_pair];
-
-                $closePrice = $currencyData['values'][0]['close'];
+        if (count($mergedResult) > 0) {
+            if (isset($mergedResult[$currency_pair])) {
+                $currencyData = $mergedResult[$currency_pair];
+                $closePrice = $currencyData['price'] ?? 0;
 
                 $this->updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss);
-
                 $this->logApiResponse($currency_pair, $currencyData);
                 $this->closeSignalIfTime($signal, $closePrice);
             }
         } else {
-
-            $this->logApiError($response);
+            $this->logApiError("No Count");
         }
     }
 
-    private function updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss)
+    private function updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss)
     {
+        $pipMultiplier = 10000;
+
+        if ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY' || $signal->currency === 'XAUUSD') {
+            $pipMultiplier = 100;
+        }
+        // if ($signal->currency === 'XAUUSD') {
+        //     $pipMultiplier = 10;
+        // }
+        $isBuy = in_array(strtoupper($signal->action), ['BUY']);
+        $isSell = in_array(strtoupper($signal->action), ['SELL']);
+
+
+
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
-            if ($$target <= $closePrice && !$signal->$statusField) {
+            $targetValue = $$target;
+
+            if (($isSell && $closeLivePrice <= $targetValue   || $isBuy && $closeLivePrice >= $targetValue) && !$signal->$statusField) {
+                if ($isBuy) {
+                    $runningPips = $$target - $signal->open_price;
+                } else {
+                    $runningPips = $signal->open_price - $$target;
+                }
+                $runningPips = $runningPips  * $pipMultiplier;
+                $signal->pips = round($runningPips, 2);
                 $signal->$statusField = true;
             }
         }
 
-        if ($stop_loss <= $closePrice && $signal->stop_loss_status === null) {
-            $signal->stop_loss_status = $closePrice;
-        }
+        if (($isSell && ($signal->tp3_status ||  $closeLivePrice >= $stop_loss)) || ($isBuy && ($signal->tp3_status || $closeLivePrice <= $stop_loss))) {
+            $signal->close_price_status = $closeLivePrice;
+            if (!$signal->tp3_status) {
+                $signal->stop_loss_status = $closeLivePrice;
+                if ($isBuy) {
+                    $runningPips = $stop_loss - $signal->open_price;
+                } else {
+                    $runningPips = $signal->open_price - $stop_loss;
+                }
 
-        if ($signal->tp1_status == true && $signal->tp2_status  == true && $signal->tp3_status  == true) {
-            $signal->close_price_status = $closePrice;
+                $runningPips = $runningPips  * $pipMultiplier;
+                $signal->pips = round($runningPips, 2);
+            }
+
             $signal->closed = 'yes';
-
-            $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy')
-                ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0)
-                : ($signal->openPrice - $signal->close_price_status) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0);
-
-            $runningPips = round($runningPips, 2);
-            $signal->pips = $runningPips;
+            // $runningPips = ($isBuy ? $stop_loss - $signal->open_price : $signal->open_price - $stop_loss) * $pipMultiplier;
+            // $runningPips = $runningPips  * $pipMultiplier;
+            // $signal->pips = round($runningPips, 2);
         }
 
         $signal->save();
     }
 
+
+
     private function logApiResponse($currencyPair, $data)
     {
-        \Log::info("API response for {$currencyPair}: " . json_encode($data));
+        $log = "API response for {$currencyPair}: " . json_encode($data);
+        self::testjobAction($log);
+
+        // \Log::info("API response for {$currencyPair}: " . json_encode($data));
+    }
+
+    private static function testjobAction($msg = 'From test job')
+    {
+        $file_name = "logs/Cron-" . date('Y-m') . ".txt";
+        $time = date('Y-m-d H:i:s');
+        Storage::append($file_name, "[{$time}] {$msg} \n");
     }
 
     private function logApiError($response)
     {
-        \Log::error('API request failed. Status code: ' . $response->status());
+        $log = 'API request failed. Status code: ' . $response->status();
+        self::testjobAction($log);
     }
 
-    private function closeSignalIfTime($signal, $closePrice)
+    private function closeSignalIfTime($signal, $closeLivePrice)
     {
         $currentTime = now()->format('H:i');
-        if ($currentTime >= '15:00') {
+        if ($currentTime === '15:00') {
+
+            // $pipMultiplier = ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') ? 100 : 10000;
             $signal->closed = 'yes';
-            $signal->close_price_status = $closePrice;
-            $signal->stop_loss_status = $closePrice;
-
-            $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy')
-                ? ($signal->close_price_status - $signal->openPrice) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0)
-                : ($signal->openPrice - $signal->close_price_status) * ($signal->currency_pair === 'EUR/USD' ? 10000 : 0);
-
-            $runningPips = round($runningPips, 2);
-            $signal->pips = $runningPips;
+            $signal->close_price_status = $closeLivePrice;
+            // $signal->stop_loss_status = $closeLivePrice;
+            // $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy') ? ($closeLivePrice - $signal->open_price) * $pipMultiplier : ($signal->open_price - $closeLivePrice) * $pipMultiplier;
+            // $runningPips = round($runningPips, 2);
+            // $signal->pips = $runningPips;
 
             $signal->save();
         }
     }
+
+
     public function destroy($id)
     {
         try {
@@ -1045,10 +1081,11 @@ class UserController extends Controller
 
             if (isset($mergedResult[$currency_pair])) {
                 $currencyData = $mergedResult[$currency_pair];
-                $closePrice = $currencyData['price'] ?? 0;
-                $this->updateSignalStatus($signal, $closePrice, $tp1, $tp2, $tp3, $stop_loss);
+                $closeLivePrice = $currencyData['price'] ?? 0;
+
+                $this->updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss);
                 $this->logApiResponse($currency_pair, $currencyData);
-                $this->closeSignalIfTime($signal, $closePrice);
+                $this->closeSignalIfTime($signal, $closeLivePrice);
             }
         }
 
