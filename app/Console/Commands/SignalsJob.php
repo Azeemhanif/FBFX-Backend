@@ -7,9 +7,13 @@ use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Storage;
+use App\Traits\{NotificationTrait};
+
 
 class SignalsJob extends Command
 {
+
+    use  NotificationTrait;
     protected $signature = 'app:signals-job';
     protected $description = 'Command description';
 
@@ -54,16 +58,24 @@ class SignalsJob extends Command
     private function updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss)
     {
         $pipMultiplier = 10000;
+        $specialCurrencies = ['XAUUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'XAGUSD'];
 
-        if ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY' || $signal->currency === 'XAUUSD') {
+        if (in_array($signal->currency, $specialCurrencies)) {
+            $pipMultiplier = 1;
+        } elseif ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') {
             $pipMultiplier = 100;
         }
-        // if ($signal->currency === 'XAUUSD') {
-        //     $pipMultiplier = 10;
-        // }
+
         $isBuy = in_array(strtoupper($signal->action), ['BUY']);
         $isSell = in_array(strtoupper($signal->action), ['SELL']);
 
+        if ($isBuy) {
+            $runningLivePips = $closeLivePrice - $signal->open_price;
+        } else {
+            $runningLivePips = $signal->open_price - $closeLivePrice;
+        }
+        $runningLivePips = $runningLivePips  * $pipMultiplier;
+        $signal->runningLivePips = round($runningLivePips, 2);
 
 
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
@@ -76,6 +88,9 @@ class SignalsJob extends Command
                 } else {
                     $runningPips = $signal->open_price - $$target;
                 }
+
+                $this->sendNotificationOnTpHitting($signal, $target);
+
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
                 $signal->$statusField = true;
@@ -91,7 +106,7 @@ class SignalsJob extends Command
                 } else {
                     $runningPips = $signal->open_price - $stop_loss;
                 }
-
+                $this->sendNotificationOnSLHitting($signal, $stop_loss);
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
             }

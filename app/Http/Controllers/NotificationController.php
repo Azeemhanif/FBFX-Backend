@@ -55,8 +55,8 @@ class NotificationController extends Controller
             $notification->type = 'info';
             $notification->save();
             $userIds = User::where('is_notification', true)->where('id', '!=', Auth::user()->id)->pluck('id');
-
-            $this->sendToAllUsers($input, $userIds);
+            $type = 'Generic';
+            $this->sendToAllUsers($input, $userIds, $type);
             $response = new NotificationResource($notification);
             return sendResponse(200, $message, $response);
         } catch (\Throwable $th) {

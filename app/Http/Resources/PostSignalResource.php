@@ -60,6 +60,7 @@ class PostSignalResource extends JsonResource
             'tp1_status' => $this->tp1_status == null ? "" : $this->tp1_status,
             'tp2_status' => $this->tp2_status == null ? "" : $this->tp2_status,
             'tp3_status' => $this->tp3_status == null ? "" : $this->tp3_status,
+            'runningLivePips' => $this->runningLivePips == null ? 0 : $this->runningLivePips,
             'close_price_status' => $this->close_price_status == null ? "" : $this->close_price_status,
             'stop_loss_status' => $this->stop_loss_status == null ? "" : $this->stop_loss_status,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),

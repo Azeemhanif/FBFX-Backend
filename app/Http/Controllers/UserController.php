@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Models\admin;
 use App\Models\User;
 use App\Mail\OTPMail;
+use App\Mail\WelcomeMail;
 use App\Mail\ResetPasswordMail;
 use App\Models\ContactUs;
 use App\Models\Device;
@@ -30,13 +31,15 @@ use Google_Service_AndroidPublisher;
 use Google_Service_Exception;
 use NunoMaduro\Collision\Adapters\Phpunit\Subscribers\Subscriber;
 use Storage;
+use App\Traits\{NotificationTrait};
+
 
 class UserController extends Controller
 {
 
     public $successStatus = 200;
 
-    use  ValidationTrait;
+    use  ValidationTrait, NotificationTrait;
     public function signup(Request $request)
     {
         try {
@@ -50,8 +53,10 @@ class UserController extends Controller
             $collection->token = $user->createToken('API token of ' . $user->first_name)->plainTextToken;
 
             if (!isset($input['id'])) {
+                $mailData1 = ['name' => $user->first_name, 'email' => $user->email];
                 $mailData = ['otp' => $user->otp];
                 sendEmailToUser($request->email, new OTPMail($mailData));
+                sendEmailToUser($request->email, new WelcomeMail($mailData1));
             }
 
             return sendResponse(200, !$request->has('id') ? 'Registration Successfully' : 'Updated Successfully', $collection);
@@ -938,29 +943,45 @@ class UserController extends Controller
 
     private function updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss)
     {
+        // $pipMultiplier = 10000;
+
+        // if ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY' || $signal->currency === 'XAUUSD') {
+        //     $pipMultiplier = 100;
+        // }
+
         $pipMultiplier = 10000;
 
-        if ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY' || $signal->currency === 'XAUUSD') {
+        $specialCurrencies = ['XAUUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'XAGUSD'];
+
+        if (in_array($signal->currency, $specialCurrencies)) {
+            $pipMultiplier = 1;
+        } elseif ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') {
             $pipMultiplier = 100;
         }
-        // if ($signal->currency === 'XAUUSD') {
-        //     $pipMultiplier = 10;
-        // }
+
         $isBuy = in_array(strtoupper($signal->action), ['BUY']);
         $isSell = in_array(strtoupper($signal->action), ['SELL']);
-
+        if ($isBuy) {
+            $runningLivePips = $closeLivePrice - $signal->open_price;
+        } else {
+            $runningLivePips = $signal->open_price - $closeLivePrice;
+        }
+        $runningLivePips = $runningLivePips  * $pipMultiplier;
+        $signal->runningLivePips = round($runningLivePips, 2);
 
 
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
             $targetValue = $$target;
-
             if (($isSell && $closeLivePrice <= $targetValue   || $isBuy && $closeLivePrice >= $targetValue) && !$signal->$statusField) {
                 if ($isBuy) {
                     $runningPips = $$target - $signal->open_price;
                 } else {
                     $runningPips = $signal->open_price - $$target;
                 }
+
+                $this->sendNotificationOnTpHitting($signal, $target);
+
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
                 $signal->$statusField = true;
@@ -976,7 +997,7 @@ class UserController extends Controller
                 } else {
                     $runningPips = $signal->open_price - $stop_loss;
                 }
-
+                $this->sendNotificationOnSLHitting($signal, $stop_loss);
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
             }
@@ -1071,7 +1092,6 @@ class UserController extends Controller
         $mergedResult = array_merge($result, $result2);
 
         $signals = PostSignal::where('closed', 'no')->get();
-
         foreach ($signals as $signal) {
             $tp1 = $signal->profit_one;
             $tp2 = $signal->profit_two;

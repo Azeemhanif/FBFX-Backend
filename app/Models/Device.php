@@ -17,17 +17,29 @@ class Device extends Model
         ini_set('memory_limit', '-1');
         set_time_limit(36000);
         if (empty($send_to)) {
-            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
-            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+
+            if (Auth::user()) {
+                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+            } else {
+                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
+                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
+            }
         } else {
-            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
-            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->where('user_id', '!=', Auth::user()->id)->pluck('device_push_token')->toArray();
+            if (Auth::user()) {
+
+                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->where('user_id', '!=', Auth::user()->id)->pluck('device_push_token')->toArray();
+            } else {
+                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
+                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
+            }
         }
 
         if (!empty($ios_devices)) {
 
             $data["title"] = "FirstBuckFx";
-            $data["type"] = 'Generic';
+            $data["type"] =  $type;
             $data['body'] =  $data["message"];
             foreach (array_chunk($ios_devices, 400) as $key => $ios_devices_chunk) {
                 $ios_data = [
@@ -52,7 +64,7 @@ class Device extends Model
 
         if (!empty($android_devices)) {
 
-            $data["type"] = 'Generic';
+            $data["type"] = $type;
             $data["title"] = "FirstBuckFx";
             $data['body'] =  $data["message"];
             foreach (array_chunk($android_devices, 400) as $key => $android_devices_chunk) {
@@ -61,7 +73,7 @@ class Device extends Model
                     "notification" => [
                         "body" => $data["body"],
                         "title" => $data["title"],
-                        //                        "notification_type" =>  $data["type"],
+                        "notification_type" =>  $data["type"],
                         "icon" => "",
                         "sound" => "default",
                     ],

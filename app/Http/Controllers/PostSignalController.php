@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\PostSignalResource;
 use App\Models\FavouriteSignal;
 use App\Models\PostSignal;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
+use App\Traits\{NotificationTrait};
 use Illuminate\Support\Facades\Auth;
 use Psy\Readline\Hoa\Console;
 use Carbon\Carbon;
@@ -16,7 +18,7 @@ class PostSignalController extends Controller
 {
 
     public $successStatus = 200;
-    use  ValidationTrait;
+    use  ValidationTrait, NotificationTrait;
 
     /**
      * Display a listing of the resource.
@@ -29,15 +31,15 @@ class PostSignalController extends Controller
             $search = $request->query('search', null);
             $postSignal = PostSignal::where('closed', '=', 'no');
 
-            if (Auth::user()->role == 'admin') {
-                $postSignal->orderBy('id', 'DESC');
-            } else {
-                if (Auth::user()->is_premium == 0) {
-                    $postSignal->orderBy('id', 'DESC')->where('type', '!=', 'premium')->whereIn('currency', ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY',  'CrudeOil',  'US30', 'SP500', 'DXY'])->take(5);
-                } else {
-                    $postSignal->orderBy('id', 'DESC')->take(15);
-                }
-            }
+            // if (Auth::user()->role == 'admin') {
+            //     $postSignal->orderBy('id', 'DESC');
+            // } else {
+            // if (Auth::user()->is_premium == 0) {
+            //     $postSignal->orderBy('id', 'DESC')->where('type', '!=', 'premium')->whereIn('currency', ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'USDCHF', 'AUDUSD', 'NZDUSD', 'EURJPY', 'GBPJPY',  'CrudeOil',  'US30', 'SP500', 'DXY'])->take(5);
+            // } else {
+            $postSignal->orderBy('id', 'DESC')->take(15);
+            // }
+            // }
 
             if ($search) {
                 $postSignal->where('currency', 'LIKE', '%' . $search . '%');
@@ -304,7 +306,7 @@ class PostSignalController extends Controller
     {
         $totalClosedSignals = $signals->count();
 
-        $profabilityWin = $signals->where('pips', '>', 0)->count();
+        $profabilityWin = $signals->where('pips', '>=', 0)->count();
         $profabilityLoss = $signals->where('pips', '<', 0)->count();
 
         $pips = $signals->sum('pips');
@@ -328,8 +330,9 @@ class PostSignalController extends Controller
                 ->whereDate('created_at', $currentDate->format('Y-m-d'))
                 ->get();
 
-            $totalProfitSignals = $dailySignals->filter(fn ($signal) => (float) $signal->close_price <= (float) $signal->close_price_status)->count();
-            $totalLossSignals = $dailySignals->filter(fn ($signal) => (float) $signal->close_price > (float) $signal->close_price_status)->count();
+            $totalProfitSignals = $dailySignals->filter(fn ($signal) => (float) $signal->pips >= 0)->count();
+            $totalLossSignals = $dailySignals->filter(fn ($signal) => (float) $signal->pips < 0)->count();
+
             $sumPips = $dailySignals->sum('pips');
 
             $dailyStatistics[] = [
@@ -363,16 +366,16 @@ class PostSignalController extends Controller
     private function getOtherStatistics($signals, $totalClosedSignals)
     {
         $pips = $longwins = $shortwins = 0;
-        $buySignals = $signals->where('action', 'buy');
-        $sellSignals = $signals->where('action', 'sell');
+        $buySignals = $signals->where('action', 'Buy');
+        $sellSignals = $signals->where('action', 'Sell');
         $totalBuySignals = $buySignals->count();
         $totalSellSignals = $sellSignals->count();
 
         foreach ($signals as $signal) {
             $pips += $signal->pips;
-            if ($signal->action == 'buy' && $signal->close_price <= $signal->close_price_status) {
+            if ($signal->action == 'Buy' && $signal->pips >= 0) {
                 $longwins++;
-            } elseif ($signal->action == 'sell' && $signal->close_price >= $signal->close_price_status) {
+            } elseif ($signal->action == 'Sell' && $signal->pips >= 0) {
                 $shortwins++;
             }
         }
@@ -482,7 +485,7 @@ class PostSignalController extends Controller
             $input['role'] = "0";
 
             $postSignal = PostSignal::updateOrCreate(['id' => isset($input['id']) ? $input['id'] : null], $input);
-
+            $this->sendOpeningPriceNotification($postSignal);
             $collection = new PostSignalResource($postSignal);
             return sendResponse(200, 'Signal created successfully!', $collection);
 
@@ -540,16 +543,17 @@ class PostSignalController extends Controller
             $runningPips = 0;
 
             // Calculate running pips for different actions and currency pairs
-            if ($closePriceStatus != null) {
-                if ($action == 'buy' || $action == 'Buy') {
-                    $runningPips = ($closePriceStatus - $openPrice) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
-                } elseif ($action == 'sell' || $action == 'Sell') {
-                    $runningPips = ($openPrice - $closePriceStatus) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
-                } else {
-                    $runningPips = 0;
-                }
-                $runningPips = round($runningPips, 2);
-            }
+            // if ($closePriceStatus != null) {
+            //     if ($action == 'buy' || $action == 'Buy') {
+            //         $runningPips = ($closePriceStatus - $openPrice) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+            //     } elseif ($action == 'sell' || $action == 'Sell') {
+            //         $runningPips = ($openPrice - $closePriceStatus) * ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+            //     } else {
+            //         $runningPips = 0;
+            //     }
+            //     $runningPips = round($runningPips, 2);
+            // }
+            $runningPips = $signalDetail->pips;
 
             // Calculate total pips earned and total pips lost from all PostSignals
 
@@ -567,18 +571,17 @@ class PostSignalController extends Controller
                 $action = $postSignal->action;
                 $currencyPair = $postSignal->currency_pair;
 
-                if ($postSignal->pips == null || $postSignal->pips == '') {
-                    $pips = ($action == 'buy' || $action == 'Buy') ? $closePriceStatus - $openPrice : $openPrice - $closePriceStatus;
-                    $pips *= ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
-                } else {
-                    $pips = $postSignal->pips;
-                }
+                // if ($postSignal->pips == null || $postSignal->pips == '') {
+                //     $pips = ($action == 'buy' || $action == 'Buy') ? $closePriceStatus - $openPrice : $openPrice - $closePriceStatus;
+                //     $pips *= ($currencyPair === 'EUR/USD' ? 10000 : ($currencyPair === 'JPY/USD' || $currencyPair === 'gold' ? 100 : 0));
+                // } else {
+                $pips = $postSignal->pips;
+                // }
+                // $pips = round($pips, 2);
 
-                $pips = round($pips, 2);
-
-                if ($action == 'buy' || $action == 'Buy') {
+                if ($pips >= 0) {
                     $totalPipsEarned += $pips;
-                } elseif ($action == 'sell' || $action == 'Sell') {
+                } else {
                     $totalPipsLost += $pips;
                 }
             }
