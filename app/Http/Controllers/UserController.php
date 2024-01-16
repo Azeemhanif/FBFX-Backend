@@ -321,6 +321,9 @@ class UserController extends Controller
 
             if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $data);
 
+            $mailData1 = ['name' => $data->first_name, 'email' => $data->email];
+            sendEmailToUser($request->email, new WelcomeMail($mailData1));
+
             $collection = new LoginResource($data);
             $data->tokens()->delete();
             $collection->token = $data->createToken('API token of ' . $data->first_name)->plainTextToken;
@@ -386,6 +389,8 @@ class UserController extends Controller
             $user->loginFrom = $input['provider_type'];
             $collection = new UserResource($user);
             $collection->token = $user->createToken('API token of ' . $user->first_name)->plainTextToken;
+            $mailData1 = ['name' => $user->first_name, 'email' => $user->email];
+            sendEmailToUser($request->email, new WelcomeMail($mailData1));
 
             return sendResponse(200, 'Login Successful!', $collection);
         } catch (\Exception $ex) {
