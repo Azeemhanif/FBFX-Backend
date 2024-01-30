@@ -450,6 +450,7 @@ class PostSignalController extends Controller
                 if ($request->has('Today')) {
                     $query->orWhereDate('created_at', '=', $now->toDateString());
                 }
+
                 if ($request->has('Yesterday')) {
                     $query->orWhereDate('created_at', '=', $now->subDay()->toDateString());
                 }

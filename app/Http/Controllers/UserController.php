@@ -301,6 +301,8 @@ class UserController extends Controller
             }
             if (!$data) {
                 $data = User::create($input);
+                $mailData1 = ['name' => $data->first_name, 'email' => $data->email];
+                sendEmailToUser($request->email, new WelcomeMail($mailData1));
             }
 
             if ($request->provider_type == 'google') {
@@ -321,8 +323,7 @@ class UserController extends Controller
 
             if (isset($input['device_type'])) $this->createOrUpdateDevice($input, $data);
 
-            $mailData1 = ['name' => $data->first_name, 'email' => $data->email];
-            sendEmailToUser($request->email, new WelcomeMail($mailData1));
+
 
             $collection = new LoginResource($data);
             $data->tokens()->delete();
@@ -335,69 +336,7 @@ class UserController extends Controller
         }
     }
 
-    public function socialLogin(Request $request)
-    {
 
-        try {
-            $validatorResult = $this->checkValidations(FBFXValidations::validateSocialLogin($request));
-            if ($validatorResult) {
-                return $validatorResult;
-            }
-
-            $string = substr($request->token, 0, 1000);
-            $userExistWithEmail = null;
-            // $user = User::where(['social_token' => $string])->onlyTrashed()->first();
-            // if ($user) {
-            //     return sendResponse(401, 'There is already an account associated with this email please contact support to resolve this issue.', (object) []);
-            // }
-
-            $input = $request->all();
-            if ($input['provider_type'] != 'facebook' && $input['provider_type'] != 'google' && $input['provider_type'] != 'apple') {
-                return sendResponse(422, 'Provider Type Does not Exist In Our System', (object)[]);
-            }
-            if (!empty($request->email)) {
-                $user = User::where(['email' => $request->email])->first();
-            } else {
-                if ($request->provider_type == 'google') {
-                    $user = User::where(['google_token' => $string])->first();
-                }
-
-                if ($request->provider_type == 'facebook') {
-                    $user = User::where(['fb_token' => $string])->first();
-                }
-
-                if ($request->provider_type == 'apple') {
-                    $user = User::where(['apple_token' => $string])->first();
-                }
-            }
-            if (!$user) {
-                return $response = sendResponse(202, 'No user found with this email', (object)[]);
-            }
-            if ($request->provider_type == 'google') {
-                $user->google_token = $string;
-            }
-
-            if ($request->provider_type == 'facebook') {
-                $user->fb_token = $string;
-            }
-
-            if ($request->provider_type == 'apple') {
-                $user->apple_token = $string;
-            }
-            $user->social_token = $string;
-            $user->save();
-            $user->loginFrom = $input['provider_type'];
-            $collection = new UserResource($user);
-            $collection->token = $user->createToken('API token of ' . $user->first_name)->plainTextToken;
-            $mailData1 = ['name' => $user->first_name, 'email' => $user->email];
-            sendEmailToUser($request->email, new WelcomeMail($mailData1));
-
-            return sendResponse(200, 'Login Successful!', $collection);
-        } catch (\Exception $ex) {
-            $response = sendResponse(500, $ex->getMessage(), (object)[]);
-            return $response;
-        }
-    }
 
     public function forget(Request $request)
     {
