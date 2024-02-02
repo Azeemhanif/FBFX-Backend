@@ -61,7 +61,12 @@ class SignalsJob extends Command
         $specialCurrencies = ['XAUUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'XAGUSD'];
 
         if (in_array($signal->currency, $specialCurrencies)) {
-            $pipMultiplier = 1;
+            if ($signal->currency == 'XAUUSD' || $signal->currency == 'XAGUSD') {
+                $pipMultiplier = 10;
+            } else {
+                $pipMultiplier = 1;
+            }
+            // $pipMultiplier = 1;
         } elseif ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') {
             $pipMultiplier = 100;
         }
@@ -95,6 +100,11 @@ class SignalsJob extends Command
                 $signal->pips = round($runningPips, 2);
                 $signal->$statusField = true;
             }
+
+            if (($isSell && $closeLivePrice >= $signal->open_price   || $isBuy && $closeLivePrice <= $signal->open_price) && $signal->$statusField == true) {
+                $signal->closed = 'yes';
+                $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+            }
         }
 
         if (($isSell && ($signal->tp3_status ||  $closeLivePrice >= $stop_loss)) || ($isBuy && ($signal->tp3_status || $closeLivePrice <= $stop_loss))) {
@@ -112,9 +122,7 @@ class SignalsJob extends Command
             }
 
             $signal->closed = 'yes';
-            // $runningPips = ($isBuy ? $stop_loss - $signal->open_price : $signal->open_price - $stop_loss) * $pipMultiplier;
-            // $runningPips = $runningPips  * $pipMultiplier;
-            // $signal->pips = round($runningPips, 2);
+            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
         }
 
         $signal->save();

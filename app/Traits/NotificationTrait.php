@@ -32,6 +32,26 @@ trait NotificationTrait
         $this->sendToAllUsers($input, null, $type);
         return true;
     }
+
+
+
+    public function sendNotificationOnCloseSignal($signal, $close_price)
+    {
+        $type = 'signalInfo';
+        $input["content"] = "$signal->currency manually closed at $close_price.";
+        $this->sendToAllUsers($input, null, $type);
+        return true;
+    }
+
+    public function sendNotificationOnAutoCloseSignal($signal, $close_price)
+    {
+        $type = 'signalInfo';
+        $input["content"] = "$signal->currency closed at $close_price.";
+        $this->sendToAllUsers($input, null, $type);
+        return true;
+    }
+
+
     public function sendOpeningPriceNotification($postSignal)
     {
         $type = 'signalInfo';

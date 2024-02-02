@@ -647,19 +647,24 @@ class PostSignalController extends Controller
             $validatorResult = $this->checkValidations(FBFXValidations::validateManualClose($request));
             if ($validatorResult) return $validatorResult;
             $input = $request->all();
-
+            $pirce = null;
             $postSignal = PostSignal::where('id', $input['id'])->first();
             if (!$postSignal)
                 return sendResponse(202, 'Signal does not exists!', (object)[]);
 
             if (isset($request->pips) && $request->pips != null)
                 $postSignal->pips = $request->pips;
-            if (isset($request->close_price) && $request->close_price != null)
+            if (isset($request->close_price) && $request->close_price != null) {
                 $postSignal->close_price = $request->close_price;
+                $pirce = $request->close_price;
+            }
 
             $postSignal->closed = 'yes';
             $postSignal->save();
             $collection = new PostSignalResource($postSignal);
+
+            $this->sendNotificationOnCloseSignal($postSignal, $pirce);
+
             return sendResponse(200, 'Signal closed successfully', $collection);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);

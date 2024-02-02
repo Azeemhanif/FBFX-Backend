@@ -869,7 +869,6 @@ class UserController extends Controller
 
         // Merge the two sets of data into a single array
         $mergedResult = array_merge($result, $result2);
-
         // Check if the request was successful
         if (count($mergedResult) > 0) {
             if (isset($mergedResult[$currency_pair])) {
@@ -898,21 +897,26 @@ class UserController extends Controller
         $specialCurrencies = ['XAUUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'XAGUSD'];
 
         if (in_array($signal->currency, $specialCurrencies)) {
-            $pipMultiplier = 1;
+            if ($signal->currency == 'XAUUSD' || $signal->currency == 'XAGUSD') {
+                $pipMultiplier = 10;
+            } else {
+                $pipMultiplier = 1;
+            }
         } elseif ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') {
             $pipMultiplier = 100;
         }
 
         $isBuy = in_array(strtoupper($signal->action), ['BUY']);
         $isSell = in_array(strtoupper($signal->action), ['SELL']);
+
         if ($isBuy) {
             $runningLivePips = $closeLivePrice - $signal->open_price;
         } else {
             $runningLivePips = $signal->open_price - $closeLivePrice;
         }
+
         $runningLivePips = $runningLivePips  * $pipMultiplier;
         $signal->runningLivePips = round($runningLivePips, 2);
-
 
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
@@ -929,6 +933,11 @@ class UserController extends Controller
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
                 $signal->$statusField = true;
+            }
+
+            if (($isSell && $closeLivePrice >= $signal->open_price   || $isBuy && $closeLivePrice <= $signal->open_price) && $signal->$statusField == true) {
+                $signal->closed = 'yes';
+                $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
             }
         }
 
@@ -947,6 +956,8 @@ class UserController extends Controller
             }
 
             $signal->closed = 'yes';
+            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+
             // $runningPips = ($isBuy ? $stop_loss - $signal->open_price : $signal->open_price - $stop_loss) * $pipMultiplier;
             // $runningPips = $runningPips  * $pipMultiplier;
             // $signal->pips = round($runningPips, 2);
