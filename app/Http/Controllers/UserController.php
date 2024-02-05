@@ -883,6 +883,7 @@ class UserController extends Controller
             $this->logApiError("No Count");
         }
     }
+    
 
     private function updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss)
     {
