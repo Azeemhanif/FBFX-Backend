@@ -122,6 +122,17 @@ class FBFXValidations
         }
     }
 
+
+    public static function validateLogout($request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
+            'device_uuid' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
     public static function forgetValidate($request)
     {
         $validator = Validator::make(
@@ -196,7 +207,7 @@ class FBFXValidations
         $validator = Validator::make(
             $request->all(),
             [
-                'email' => 'required|unique:users,email,' . $request->id,
+                'email' => 'required',
             ]
         )->stopOnFirstFailure(true);
 
@@ -232,10 +243,10 @@ class FBFXValidations
         $validator = Validator::make(
             $request->all(),
             [
-                'GPS' => 'required',
-                'trade' => 'required',
-                'PAMM' => 'required',
-                'IB_broker' => 'required',
+                // 'GPS' => 'required',
+                // 'trade' => 'required',
+                // 'PAMM' => 'required',
+                // 'IB_broker' => 'required',
             ]
         )->stopOnFirstFailure(true);
 
@@ -244,7 +255,23 @@ class FBFXValidations
         }
     }
 
+    public static function validateRiskCalculator($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'account_currency' => 'required',
+                'account_balance' => 'required',
+                'stop_loss' => 'required',
+                'risk_percentage' => 'required',
+                'currency_pair' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
 
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
 
 
 
@@ -313,6 +340,22 @@ class FBFXValidations
         }
     }
 
+
+
+    public static function validateManualClose($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
     public static function validateContactUs($request)
     {
         $validator = Validator::make(
@@ -370,6 +413,62 @@ class FBFXValidations
             [
                 'membership_type' => 'required',
                 'email' => 'required|email',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+
+
+    public static function validateReceipt($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'receipt' => 'required',
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+
+
+    public static function validatePurchasePackage($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'user_id' => 'required',
+                'package_id' => 'required',
+                'subscription_type' => 'required',
+                // 'receipt' => 'required',
+                'purchase_token' => 'required',
+                'transaction_id' => 'required',
+                'amount' => 'required',
+                'start_date' => 'required',
+                'end_date' => 'required'
+            ]
+        )->stopOnFirstFailure(true);
+
+        if ($validator->fails()) {
+            return $validator;
+        }
+    }
+
+    public static function validateReceiptAndroid($request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'package_name' => 'required',
+                'product_id' => 'required',
+                'token' => 'required',
             ]
         )->stopOnFirstFailure(true);
 

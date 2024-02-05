@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademyController;
 use App\Http\Controllers\AffiliateLinkController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
@@ -30,12 +31,22 @@ Route::controller(UserController::class)->prefix('user/')->group(function () {
     Route::post('socialSignup', 'socialSignup');
     // Route::post('/socialLogin', 'socialLogin');
     Route::post('forget-password', 'forget');
+    Route::get('testCronJob', 'testCronJob');
+    Route::get('listing', 'usersListing');
+    Route::get('tokenListing', 'tokenListing');
     Route::get('setting', 'setting')->middleware("auth:sanctum");
+    Route::get('profile', 'profileDetail')->middleware("auth:sanctum");
     Route::post('feedback', 'feedback')->middleware("auth:sanctum");
+    Route::post('logout', 'logout');
     Route::post('contact-us', 'contactUs')->middleware("auth:sanctum");
     Route::post('update/profile', 'updateProfile')->middleware("auth:sanctum")->name('user.updateProfile');
     Route::post('verify/otp', 'verifyOtp')->middleware("auth:sanctum")->name('user.verifyOtp');
     Route::get('regenerate/otp', 'regenerateOtp')->middleware("auth:sanctum")->name('user.regenerateOtp');
+    Route::post('risk/calculator', 'riskCalculator')->middleware("auth:sanctum");
+    Route::get("notifications/listing", "notificationListing")->middleware("auth:sanctum");
+    Route::delete('account', 'deleteAccount')->middleware("auth:sanctum");
+    Route::post('validateReceipt/{type}', 'validateReceipt')->middleware("auth:sanctum");
+    Route::get('cancel/subscription', 'cancelSubscription')->middleware("auth:sanctum");
 });
 
 Route::middleware('auth:sanctum')->prefix('user/')->group(
@@ -55,6 +66,22 @@ Route::middleware('auth:sanctum')->prefix('user/')->group(
                 Route::get("listing", "ibBrokerListing");
             }
         );
+
+        Route::controller(AffiliateLinkController::class)->prefix('affiliate/links/')->group(
+            function () {
+                Route::get("/{id}", "edit");
+            }
+        );
+        Route::controller(AcademyController::class)->prefix('academy/')->group(
+            function () {
+                Route::get("listing", "show");
+            }
+        );
+        Route::controller(SubscriptionController::class)->prefix('purchase/')->middleware('auth:sanctum')->group(
+            function () {
+                Route::post("package", "purchasePackage");
+            }
+        );
     }
 );
 
@@ -64,7 +91,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
             function () {
                 Route::post("add", "addAdmin");
                 Route::get("detail/{id}", "detailAdmin");
-                // Route::post("update", "updateAdmin");
+                Route::get("listing", "listingAdmin");
                 Route::delete('/{id}', 'destroy');
             }
         );
@@ -72,6 +99,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
         Route::controller(PostSignalController::class)->prefix('signals/')->group(
             function () {
                 Route::post("create", "store");
+                Route::post("manual/close", "manualClose");
+                Route::delete("delete/{id}", "destroy");
             }
         );
 
@@ -94,7 +123,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
         Route::controller(NotificationController::class)->prefix('notifications/')->group(
             function () {
                 Route::post("add", "store");
-                Route::get("listing", "show");
                 Route::delete("delete/{id}", "destroy");
             }
         );
@@ -105,7 +133,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/')->group(
                 // Route::post("add/user", "addUsers");
                 Route::get("listing/user", "listingUsers");
                 Route::post("add/premium/user", "addPremiumUsers");
-                // Route::get("listing/premium/user", "listingPremiumUsers");
+                Route::get("listing/premium/user", "listingPremiumUsers");
+                Route::get('cancel/{id}', 'cancelSubscription');
             }
         );
     }

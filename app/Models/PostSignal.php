@@ -23,6 +23,7 @@ class PostSignal extends Model
         'close_price',
         'role',
         'type',
+        'currency',
         'id', // Add id to the fillable array
     ];
 }

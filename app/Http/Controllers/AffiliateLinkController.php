@@ -38,7 +38,7 @@ class AffiliateLinkController extends Controller
             $validatorResult = $this->checkValidations(FBFXValidations::validateAffiliateLink($request));
             if ($validatorResult) return $validatorResult;
             $input = $request->all();
-
+            $input['id'] = 1;
             $affiliateLink = AffiliateLink::updateOrCreate(['id' => isset($input['id']) ? $input['id'] : null], $input);
             $collection = new AffiliateResource($affiliateLink);
             if (isset($input['id']))

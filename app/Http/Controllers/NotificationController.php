@@ -47,14 +47,16 @@ class NotificationController extends Controller
             if (isset($input['id'])) {
                 $message = 'Notification updated successfully!';
                 $notification = Notification::where('id', $input['id'])->first();
+                if (!$notification)
+                    return sendResponse(202, 'Notification does not exists!', (object)[]);
             }
             $notification->deliver_from = Auth::user()->id;
             $notification->content = $input['content'];
             $notification->type = 'info';
             $notification->save();
-
-            $userIds = User::where('role', '!=', 'admin')->pluck('id');
-            $this->sendToAllUsers($input, $userIds);
+            $userIds = User::where('is_notification', true)->where('id', '!=', Auth::user()->id)->pluck('id');
+            $type = 'Generic';
+            $this->sendToAllUsers($input, $userIds, $type);
             $response = new NotificationResource($notification);
             return sendResponse(200, $message, $response);
         } catch (\Throwable $th) {
@@ -66,27 +68,7 @@ class NotificationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request)
-    {
-        try {
-            $page = $request->query('page', 1);
-            $limit = $request->query('limit', 10);
 
-            $notification = Notification::query();
-
-            $count = $notification->count();
-            $data = $notification->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
-            $collection = NotificationResource::collection($data);
-            $response = [
-                'totalCount' => $count,
-                'notifications' => $collection,
-            ];
-            return sendResponse(200, 'Data fetching successfully!', $response);
-        } catch (\Throwable $th) {
-            $response = sendResponse(500, $th->getMessage(), (object)[]);
-            return $response;
-        }
-    }
 
     /**
      * Show the form for editing the specified resource.

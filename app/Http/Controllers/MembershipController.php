@@ -9,11 +9,14 @@ use App\Http\Resources\UserResource;
 use App\Models\IbBroker;
 use App\Models\Membership;
 use App\Models\PremiumMember;
+use App\Models\Subscription;
+use App\Models\SubscriptionHistory;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Validations\FBFXValidations;
 use App\Traits\{ValidationTrait};
 use App\Traits\{NotificationTrait};
+use Google\Service\ServiceControl\Auth;
 
 class MembershipController extends Controller
 {
@@ -30,6 +33,8 @@ class MembershipController extends Controller
             if (isset($input['id'])) {
                 $message = 'Membership updated successfully!';
                 $membership = Membership::where('id', $input['id'])->first();
+                if (!$membership)
+                    return sendResponse(202, 'Membership does not exists!', (object)[]);
             }
             $membership->monthly_price = $input['monthly_price'];
             $membership->yearly_price = $input['yearly_price'];
@@ -151,21 +156,62 @@ class MembershipController extends Controller
             $input = $request->all();
             $user = User::where('email', $input['email'])->first();
             if (!$user)
-                return sendResponse(422, 'User does not registered!', (object)[]);
+                return sendResponse(422, 'User does not exists!', (object)[]);
 
-            $premiumMember = PremiumMember::where('email', $input['email'])->first();
-            if ($premiumMember)
-                return sendResponse(422, 'Email already have membership!', (object)[]);
+            if ($user->is_premium == true)
+                return sendResponse(422, 'User already have subsciption!', (object)[]);
 
-            $premiumMember = new PremiumMember();
-            $premiumMember->membership_type = $input['membership_type'];
-            $premiumMember->email = $input['email'];
-            $premiumMember->user_id = $user->id;
-            $premiumMember->status = 'approved';
-            $premiumMember->type = 'premium';
-            $premiumMember->save();
-            $response = new PremiumMemberResource($premiumMember);
+            $user->is_premium = true;
+            $user->save();
+
+            $subscription = Subscription::where('user_id', $user->id)->first();
+            $subscriptionhistory = SubscriptionHistory::where('user_id', $user->id)->first();
+            if (!$subscription) {
+                $subscription = new Subscription();
+            }
+
+            if (!$subscriptionhistory) {
+                $subscriptionhistory = new SubscriptionHistory();
+            }
+            $subscription->add_by_admin = true;
+            $subscription->user_id = $user->id;
+            $subscription->subscription_type = $input['membership_type'];
+            $subscription->save();
+
+
+            $subscriptionhistory->add_by_admin = true;
+            $subscriptionhistory->user_id = $user->id;
+            $subscriptionhistory->subscription_type = $input['membership_type'];
+            $subscriptionhistory->save();
+            // $premiumMember = PremiumMember::where('email', $input['email'])->first();
+            // if ($premiumMember)
+            //     return sendResponse(422, 'Email already have membership!', (object)[]);
+
+            // $premiumMember = new PremiumMember();
+            // $premiumMember->membership_type = $input['membership_type'];
+            // $premiumMember->email = $input['email'];
+            // $premiumMember->user_id = $user->id;
+            // $premiumMember->status = 'approved';
+            // $premiumMember->type = 'premium';
+            // $premiumMember->save();
+            $response = new UserResource($user);
             return sendResponse(200, 'Premium member created successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
+
+    public function cancelSubscription($id)
+    {
+        try {
+            $user = User::where('id', $id)->first();
+            $user->is_premium = false;
+            $user->save();
+            $subscription = Subscription::where('user_id', $user->id)->first();
+            if ($subscription) $subscription->delete();
+            $response = new UserResource($user);
+            return sendResponse(200, 'Data fetching successfully!', $response);
         } catch (\Throwable $th) {
             $response = sendResponse(500, $th->getMessage(), (object)[]);
             return $response;
@@ -174,32 +220,35 @@ class MembershipController extends Controller
 
 
 
+    public function listingPremiumUsers(Request $request)
+    {
+        try {
+            $page = $request->query('page', 1);
+            $limit = $request->query('limit', 10);
+            $type = $request->query('type', 'all');
 
-    // public function listingPremiumUsers(Request $request)
-    // {
-    //     try {
-    //         $page = $request->query('page', 1);
-    //         $limit = $request->query('limit', 10);
-    //         $limit = $request->query('type', 'all');
+            // $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
+            if ($type == 'premium') {
+                $users  = User::where(['is_premium' => true, 'role' => 'user']);
+            }
+            if ($type == 'free') {
+                $users  = User::where(['is_premium' => false, 'role' => 'user']);
+            }
+            if ($type == 'all') {
+                $users = User::where('role', 'user');
+            }
 
-    //         if ($limit = 'premium') {
-    //             $premiumMemberIds = PremiumMember::where(['type' => 'premium', 'status' => 'approved'])->pluck('user_id');
-    //             $users  = User::whereIn('user_id', $premiumMemberIds);
-    //         }
-    //         if ($limit = 'all') {
-    //             $users  = User::where('role', 'user')->query();
-    //         }
-    //         $count = $users->count();
-    //         $data = $users->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
-    //         $collection = UserResource::collection($data);
-    //         $response = [
-    //             'totalCount' => $count,
-    //             'users' => $collection,
-    //         ];
-    //         return sendResponse(200, 'Data fetching successfully!', $response);
-    //     } catch (\Throwable $th) {
-    //         $response = sendResponse(500, $th->getMessage(), (object)[]);
-    //         return $response;
-    //     }
-    // }
+            $count = $users->count();
+            $data = $users->orderBy('id', 'DESC')->paginate($limit, ['*'], 'page', $page);
+            $collection = UserResource::collection($data);
+            $response = [
+                'totalCount' => $count,
+                'users' => $collection,
+            ];
+            return sendResponse(200, 'Data fetching successfully!', $response);
+        } catch (\Throwable $th) {
+            $response = sendResponse(500, $th->getMessage(), (object)[]);
+            return $response;
+        }
+    }
 }

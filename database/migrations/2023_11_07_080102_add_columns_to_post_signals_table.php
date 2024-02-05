@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('pips')->default(0);
             $table->string('closed')->default('no');
             $table->boolean('worst_pips')->default(0);
+            $table->string('runningLivePips')->default(0);
             $table->string('close_price')->nullable();
             $table->string('open_price')->nullable();
             $table->string('role')->nullable();

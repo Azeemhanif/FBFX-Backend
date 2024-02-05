@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::table('notifications', function (Blueprint $table) {
             $table->string('type')->nullable();
             $table->string('status')->default('complete');
-            $table->unsignedBigInteger('deliver_from');
-            $table->foreign('deliver_from')->nullable()->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('deliver_from')->nullable();
+            $table->foreign('deliver_from')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

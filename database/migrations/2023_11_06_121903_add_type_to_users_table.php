@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('reset_password_link')->nullable();
             $table->tinyInteger('is_verified')->default(0);
             $table->tinyInteger('is_notification')->default(1);
+            $table->string('package_id')->nullable();
+            $table->tinyInteger('is_premium')->default(0);
         });
     }
 
