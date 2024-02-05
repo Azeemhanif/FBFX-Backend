@@ -20,4 +20,4 @@ jobs:
           server: ftp.crunchyapps.com
           username: ftpCicd@crunchyapps.com
           password: K@8u%C6RiIJ5
-          server-dir: /public/fbfx/
+          server-dir: /public_html/fbfx/
