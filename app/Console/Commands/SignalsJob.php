@@ -94,7 +94,11 @@ class SignalsJob extends Command
                     $runningPips = $signal->open_price - $$target;
                 }
 
-                $this->sendNotificationOnTpHitting($signal, $target);
+                if ($target == 'tp1') {
+                    $this->sendNotificationOnTpOneHitting($signal);
+                } else {
+                    $this->sendNotificationOnTpHitting($signal, $target);
+                }
 
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
@@ -103,7 +107,8 @@ class SignalsJob extends Command
 
             if (($isSell && $closeLivePrice >= $signal->open_price   || $isBuy && $closeLivePrice <= $signal->open_price) && $signal->$statusField == true) {
                 $signal->closed = 'yes';
-                $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+                $this->sendNotificationOnBreakevenCloseSignal($signal);
+                // $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
             }
         }
 

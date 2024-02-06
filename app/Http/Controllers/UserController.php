@@ -883,18 +883,11 @@ class UserController extends Controller
             $this->logApiError("No Count");
         }
     }
-    
+
 
     private function updateSignalStatus($signal, $closeLivePrice, $tp1, $tp2, $tp3, $stop_loss)
     {
-        // $pipMultiplier = 10000;
-
-        // if ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY' || $signal->currency === 'XAUUSD') {
-        //     $pipMultiplier = 100;
-        // }
-
         $pipMultiplier = 10000;
-
         $specialCurrencies = ['XAUUSD', 'BTCUSD', 'ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'XAGUSD'];
 
         if (in_array($signal->currency, $specialCurrencies)) {
@@ -903,6 +896,7 @@ class UserController extends Controller
             } else {
                 $pipMultiplier = 1;
             }
+            // $pipMultiplier = 1;
         } elseif ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') {
             $pipMultiplier = 100;
         }
@@ -915,13 +909,14 @@ class UserController extends Controller
         } else {
             $runningLivePips = $signal->open_price - $closeLivePrice;
         }
-
         $runningLivePips = $runningLivePips  * $pipMultiplier;
         $signal->runningLivePips = round($runningLivePips, 2);
+
 
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
             $targetValue = $$target;
+
             if (($isSell && $closeLivePrice <= $targetValue   || $isBuy && $closeLivePrice >= $targetValue) && !$signal->$statusField) {
                 if ($isBuy) {
                     $runningPips = $$target - $signal->open_price;
@@ -929,7 +924,11 @@ class UserController extends Controller
                     $runningPips = $signal->open_price - $$target;
                 }
 
-                $this->sendNotificationOnTpHitting($signal, $target);
+                if ($target == 'tp1') {
+                    $this->sendNotificationOnTpOneHitting($signal);
+                } else {
+                    $this->sendNotificationOnTpHitting($signal, $target);
+                }
 
                 $runningPips = $runningPips  * $pipMultiplier;
                 $signal->pips = round($runningPips, 2);
@@ -938,7 +937,8 @@ class UserController extends Controller
 
             if (($isSell && $closeLivePrice >= $signal->open_price   || $isBuy && $closeLivePrice <= $signal->open_price) && $signal->$statusField == true) {
                 $signal->closed = 'yes';
-                $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+                $this->sendNotificationOnBreakevenCloseSignal($signal);
+                // $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
             }
         }
 
@@ -958,15 +958,10 @@ class UserController extends Controller
 
             $signal->closed = 'yes';
             $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
-
-            // $runningPips = ($isBuy ? $stop_loss - $signal->open_price : $signal->open_price - $stop_loss) * $pipMultiplier;
-            // $runningPips = $runningPips  * $pipMultiplier;
-            // $signal->pips = round($runningPips, 2);
         }
 
         $signal->save();
     }
-
 
 
     private function logApiResponse($currencyPair, $data)

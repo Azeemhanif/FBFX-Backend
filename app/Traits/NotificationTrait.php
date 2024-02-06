@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 trait NotificationTrait
 {
@@ -23,6 +24,16 @@ trait NotificationTrait
         $this->sendToAllUsers($input, null, $type);
         return true;
     }
+
+
+    public function sendNotificationOnTpOneHitting($signal)
+    {
+        $type = 'signalInfo';
+        $input["content"] = "$signal->currency reaches TP1, move your stop-loss to breakeven.";
+        $this->sendToAllUsers($input, null, $type);
+        return true;
+    }
+
 
     public function sendNotificationOnSLHitting($signal, $sl)
     {
@@ -46,10 +57,21 @@ trait NotificationTrait
     public function sendNotificationOnAutoCloseSignal($signal, $close_price)
     {
         $type = 'signalInfo';
+
         $input["content"] = "$signal->currency closed at $close_price.";
         $this->sendToAllUsers($input, null, $type);
         return true;
     }
+
+
+    public function sendNotificationOnBreakevenCloseSignal($signal)
+    {
+        $type = 'signalInfo';
+        $input["content"] = "$signal->currency closes at breakeven.";
+        $this->sendToAllUsers($input, null, $type);
+        return true;
+    }
+
 
 
     public function sendOpeningPriceNotification($postSignal)
