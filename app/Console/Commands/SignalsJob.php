@@ -66,7 +66,6 @@ class SignalsJob extends Command
             } else {
                 $pipMultiplier = 1;
             }
-            // $pipMultiplier = 1;
         } elseif ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') {
             $pipMultiplier = 100;
         }
@@ -79,9 +78,10 @@ class SignalsJob extends Command
         } else {
             $runningLivePips = $signal->open_price - $closeLivePrice;
         }
+
         $runningLivePips = $runningLivePips  * $pipMultiplier;
         $signal->runningLivePips = round($runningLivePips, 2);
-
+        $signal->pips = round($runningLivePips, 2);
 
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
@@ -158,14 +158,10 @@ class SignalsJob extends Command
     {
         $currentTime = now()->format('H:i');
         if ($currentTime === '15:00') {
-            // $pipMultiplier = ($signal->currency === 'USDJPY' || $signal->currency === 'EURJPY' || $signal->currency === 'GBPJPY') ? 100 : 10000;
             $signal->closed = 'yes';
             $signal->close_price_status = $closeLivePrice;
-            // $signal->stop_loss_status = $closeLivePrice;
-            // $runningPips = ($signal->action === 'buy' || $signal->action === 'Buy') ? ($closeLivePrice - $signal->open_price) * $pipMultiplier : ($signal->open_price - $closeLivePrice) * $pipMultiplier;
-            // $runningPips = round($runningPips, 2);
-            // $signal->pips = $runningPips;
             $signal->save();
+            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
         }
     }
 
