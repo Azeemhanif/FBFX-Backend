@@ -21,7 +21,6 @@ class AdminMiddleware
             'data' => []
         ];
 
-
         if (auth()->user()->role == 'admin' || auth()->user()->role == 'superadmin') {
             return $next($request);
         }

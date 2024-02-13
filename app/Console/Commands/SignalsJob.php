@@ -108,7 +108,7 @@ class SignalsJob extends Command
             if (($isSell && $closeLivePrice >= $signal->open_price   || $isBuy && $closeLivePrice <= $signal->open_price) && $signal->$statusField == true) {
                 $signal->closed = 'yes';
                 $this->sendNotificationOnBreakevenCloseSignal($signal);
-                // $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+                // $this->sendNotificationOnAutoCloseSignalV2($signal, $closeLivePrice);
             }
         }
 
@@ -127,7 +127,7 @@ class SignalsJob extends Command
             }
 
             $signal->closed = 'yes';
-            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+            $this->sendNotificationOnAutoCloseSignalV2($signal, $closeLivePrice);
         }
 
         $signal->save();
@@ -161,7 +161,7 @@ class SignalsJob extends Command
             $signal->closed = 'yes';
             $signal->close_price_status = $closeLivePrice;
             $signal->save();
-            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+            $this->sendNotificationOnAutoCloseSignalV2($signal, $closeLivePrice);
         }
     }
 

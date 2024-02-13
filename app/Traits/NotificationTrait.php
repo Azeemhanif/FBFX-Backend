@@ -21,7 +21,7 @@ trait NotificationTrait
         if ($tp == 'tp3') $TPName = 'TP3';
 
         $input["content"] = "$signal->currency reaches $TPName.";
-        $this->sendToAllUsers($input, null, $type);
+        $this->sendToAllUsersV2($input, null, $type);
         return true;
     }
 
@@ -30,7 +30,7 @@ trait NotificationTrait
     {
         $type = 'signalInfo';
         $input["content"] = "$signal->currency reaches TP1, move your stop-loss to breakeven.";
-        $this->sendToAllUsers($input, null, $type);
+        $this->sendToAllUsersV2($input, null, $type);
         return true;
     }
 
@@ -40,7 +40,7 @@ trait NotificationTrait
         $type = 'signalInfo';
 
         $input["content"] = "$signal->currency reaches SL.";
-        $this->sendToAllUsers($input, null, $type);
+        $this->sendToAllUsersV2($input, null, $type);
         return true;
     }
 
@@ -64,11 +64,20 @@ trait NotificationTrait
     }
 
 
+    public function sendNotificationOnAutoCloseSignalV2($signal, $close_price)
+    {
+        $type = 'signalInfo';
+        $input["content"] = "$signal->currency closed at $close_price.";
+        $this->sendToAllUsersV2($input, null, $type);
+        return true;
+    }
+
+
     public function sendNotificationOnBreakevenCloseSignal($signal)
     {
         $type = 'signalInfo';
         $input["content"] = "$signal->currency closes at breakeven.";
-        $this->sendToAllUsers($input, null, $type);
+        $this->sendToAllUsersV2($input, null, $type);
         return true;
     }
 
@@ -95,6 +104,16 @@ trait NotificationTrait
         $checkResponse = Device::sendPush($data, $users, $type);
         return true;
     }
+
+
+    public function sendToAllUsersV2($input, $ids, $type)
+    {
+        $users = User::where('is_notification', true)->pluck('id');
+        $data["message"] = $input['content'];
+        $checkResponse = Device::sendPush($data, $users, $type);
+        return true;
+    }
+
 
 
     public function createNotification($input)

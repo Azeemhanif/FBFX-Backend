@@ -18,22 +18,21 @@ class Device extends Model
         set_time_limit(36000);
         if (empty($send_to)) {
 
-            if (Auth::user()) {
-                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
-                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
-            } else {
-                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
-                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
-            }
+            // if (Auth::user()) {
+            //     $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+            //     $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+            // } else {
+            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
+            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->get()->pluck('device_push_token')->toArray();
+            // }
         } else {
-            if (Auth::user()) {
-
-                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
-                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->where('user_id', '!=', Auth::user()->id)->pluck('device_push_token')->toArray();
-            } else {
-                $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
-                $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
-            }
+            // if (Auth::user()) {
+            //     $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->where('user_id', '!=', Auth::user()->id)->get()->pluck('device_push_token')->toArray();
+            //     $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->where('user_id', '!=', Auth::user()->id)->pluck('device_push_token')->toArray();
+            // } else {
+            $android_devices = Device::where('device_type', 'android')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
+            $ios_devices = Device::where('device_type', 'ios')->where('device_push_token', '!=', null)->whereIn('user_id', $send_to)->get()->pluck('device_push_token')->toArray();
+            // }
         }
 
         if (!empty($ios_devices)) {

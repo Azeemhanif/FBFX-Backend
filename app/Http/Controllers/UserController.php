@@ -938,7 +938,7 @@ class UserController extends Controller
             if (($isSell && $closeLivePrice >= $signal->open_price   || $isBuy && $closeLivePrice <= $signal->open_price) && $signal->$statusField == true) {
                 $signal->closed = 'yes';
                 $this->sendNotificationOnBreakevenCloseSignal($signal);
-                // $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+                // $this->sendNotificationOnAutoCloseSignalV2($signal, $closeLivePrice);
             }
         }
 
@@ -957,7 +957,7 @@ class UserController extends Controller
             }
 
             $signal->closed = 'yes';
-            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+            $this->sendNotificationOnAutoCloseSignalV2($signal, $closeLivePrice);
         }
 
         $signal->save();
@@ -991,10 +991,9 @@ class UserController extends Controller
             $signal->closed = 'yes';
             $signal->close_price_status = $closeLivePrice;
             $signal->save();
-            $this->sendNotificationOnAutoCloseSignal($signal, $closeLivePrice);
+            $this->sendNotificationOnAutoCloseSignalV2($signal, $closeLivePrice);
         }
     }
-
 
 
     public function destroy($id)
