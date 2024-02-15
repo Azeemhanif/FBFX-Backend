@@ -81,7 +81,6 @@ class SignalsJob extends Command
 
         $runningLivePips = $runningLivePips  * $pipMultiplier;
         $signal->runningLivePips = round($runningLivePips, 2);
-        $signal->pips = round($runningLivePips, 2);
 
         foreach (['tp1', 'tp2', 'tp3'] as $target) {
             $statusField = "{$target}_status";
@@ -158,6 +157,11 @@ class SignalsJob extends Command
     {
         $currentTime = now()->format('H:i');
         if ($currentTime === '15:00') {
+
+            if ($signal->pips == 0 || $signal->pips == null) {
+                $signal->pips = $signal->runningLivePips;
+            }
+
             $signal->closed = 'yes';
             $signal->close_price_status = $closeLivePrice;
             $signal->save();
